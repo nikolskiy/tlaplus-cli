@@ -1,0 +1,78 @@
+repos:
+  - repo: local
+    hooks:
+      - id: detect-secrets
+        name: detect-secrets
+        entry: uv run detect-secrets-hook --baseline .secrets.baseline
+        language: system
+        types: [text]
+
+      - id: check-added-large-files
+        name: Check for added large files
+        entry: uv run check-added-large-files
+        language: system
+        types: [file]
+
+      - id: check-yaml
+        name: Check YAML
+        entry: uv run check-yaml
+        language: system
+        types: [yaml]
+
+      - id: check-toml
+        name: Check TOML
+        entry: uv run check-toml
+        language: system
+        types: [toml]
+
+      - id: check-merge-conflict
+        name: Check for merge conflicts
+        entry: uv run check-merge-conflict
+        language: system
+        types: [text]
+
+      - id: debug-statements
+        name: Debug statements (python)
+        entry: uv run debug-statement-hook
+        language: system
+        types: [python]
+
+      - id: detect-private-key
+        name: Detect private key
+        entry: uv run detect-private-key
+        language: system
+        types: [text]
+
+      - id: mixed-line-ending
+        name: Mixed line ending
+        entry: uv run mixed-line-ending
+        language: system
+        types: [text]
+
+      - id: check-case-conflict
+        name: Check case conflict
+        entry: uv run check-case-conflict
+        language: system
+        types: [text]
+
+      - id: ruff
+        name: ruff
+        entry: uv run ruff check --force-exclude
+        language: system
+        types: [python]
+        require_serial: true
+
+      - id: mypy
+        name: mypy
+        entry: uv run mypy
+        language: system
+        types: [python]
+        require_serial: true
+        exclude: ^tests/
+
+      - id: pytest
+        name: pytest
+        entry: uv run pytest
+        language: system
+        pass_filenames: false
+        always_run: true

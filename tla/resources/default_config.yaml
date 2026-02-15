@@ -1,0 +1,23 @@
+tla:
+  jar_name: tla2tools.jar
+  urls:
+    stable: https://github.com/tlaplus/tlaplus/releases/latest/download/tla2tools.jar
+    nightly: https://tla.msr-inria.inria.fr/tlatoolbox/ci/dist/tla2tools.jar
+
+# Path to the TLA+ workspace (specs, custom modules, compiled classes).
+# Relative paths are resolved from the current working directory.
+workspace:
+  root: .
+  spec_dir: spec
+  modules_dir: modules
+  classes_dir: classes
+
+tlc:
+  java_class: tlc2.TLC
+  overrides_class: tlc2.overrides.TLCOverrides
+
+java:
+  min_version: 11
+  opts:
+    - "-XX:+IgnoreUnrecognizedVMOptions"
+    - "-XX:+UseParallelGC"

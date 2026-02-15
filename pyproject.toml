@@ -1,0 +1,104 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tlaplus-cli"
+version = "0.1.0"
+description = "TLA+ tools: download TLC, compile custom modules, run model checker"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "typer>=0.22.0,<1.0.0",
+    "requests>=2.31.0,<3.0.0",
+    "pyyaml>=6.0,<7.0",
+    "platformdirs>=4.0,<5.0",
+    "pydantic>=2.12.5,<3.0.0",
+]
+
+[project.scripts]
+tla = "tla.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["tla*"]
+
+[tool.setuptools.package-data]
+tla = ["resources/default_config.yaml"]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2,<10.0.0",
+    "pytest-cov>=7.0.0,<8.0.0",
+    "pytest-mock>=3.15.1,<4.0.0",
+    "ruff>=0.9.0,<1.0.0",
+    "mypy>=1.0.0,<2.0.0",
+    "types-PyYAML>=6.0.12.12,<7.0.0.0",
+    "types-requests>=2.31.0.2,<3.0.0.0",
+    "poethepoet>=0.24.0,<1.0.0",
+    "detect-secrets>=1.5.0,<2.0.0",
+    "pre-commit>=3.5.0,<4.0.0",
+    "pre-commit-hooks>=6.0.0,<7.0.0",
+]
+
+[tool.pytest.ini_options]
+addopts = "--cov=tla --cov-report=term-missing"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py313"
+
+[tool.ruff.lint]
+select = [
+    "F",      # Pyflakes: logic errors
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "I",      # isort: import sorting
+    "N",      # pep8-naming: naming conventions
+    "UP",     # pyupgrade: upgrade syntax for newer python versions
+    "PL",     # Pylint: various checks (convention, refactor, warning, etc.)
+    "B",      # flake8-bugbear: finds likely bugs and design problems
+    "SIM",    # flake8-simplify: suggests simpler python constructs
+    "C4",     # flake8-comprehensions: better list/set/dict comprehensions
+    "PIE",    # flake8-pie: miscellaneous lints
+    "TCH",    # flake8-type-checking: move imports to type-checking blocks
+    "PGH",    # pygrep-hooks: regex based checks
+    "G",      # flake8-logging-format: validate logging format strings
+    "RUF",    # Ruff-specific rules
+    "PTH",    # flake8-use-pathlib: replace os.path with pathlib
+    "ARG",    # flake8-unused-arguments: find unused function arguments
+    "RET",    # flake8-return: cleaner return logic
+    "TRY",    # tryceratops: prevent exception handling anti-patterns
+]
+ignore = [
+    "PLR2004", # Magic value used in comparison
+    "PLW1510", # subprocess.run without explicit check
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = [
+    "ARG001", # Unused arguments are common in tests (fixtures)
+]
+
+[tool.poe.tasks]
+check = "pre-commit run --all-files"
+lint = ["lint-ruff", "type-check"]
+lint-ruff = "ruff check ."
+type-check = "mypy ."
+fix = ["format", "lint-fix"]
+format = "ruff format ."
+lint-fix = "ruff check --fix ."
+test = "pytest"
+install-hooks = "pre-commit install --install-hooks"
+audit = "detect-secrets audit .secrets.baseline"
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+ignore_missing_imports = false
+exclude = ["build"]
+
+# Per-module overrides for libraries without strict types
+[[tool.mypy.overrides]]
+module = "platformdirs.*"
+ignore_missing_imports = true
