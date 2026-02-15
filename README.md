@@ -6,11 +6,48 @@ Command-line tool for working with TLA+ specifications and the TLC model checker
 
 ```bash
 # Install system-wide via uv tool
-uv tool install .
+uv tool install git+https://github.com/nikolskiy/tlaplus-cli
+```
 
-# Or for development
-uv sync
-uv run tla --version
+## Usage
+
+### Download TLC
+
+```bash
+# Download stable release
+tla download
+
+# Download nightly build
+tla download --nightly
+```
+
+### Check Java Version
+
+```bash
+tla check-java
+```
+
+### Compile Custom Java Modules
+
+```bash
+tla build
+
+# Verbose output
+tla build --verbose
+```
+
+Compiles `.java` files from `workspace/modules/` into `workspace/classes/`.
+
+### Run TLC
+
+```bash
+tla tlc <spec_name>
+```
+
+For example:
+
+```bash
+tla tlc queue
 ```
 
 ## Configuration
@@ -31,13 +68,14 @@ tla:
     nightly: https://tla.msr-inria.inria.fr/tlatoolbox/ci/dist/tla2tools.jar
 
 workspace:
-  root: /path/to/your/tla-project   # or relative to cwd
-  spec_dir: spec
-  modules_dir: modules
-  classes_dir: classes
+  root: .                 # Project root (relative to CWD)
+  spec_dir: spec          # Directory containing .tla files
+  modules_dir: modules    # Directory containing .java files
+  classes_dir: classes    # Directory for compiled .class files
 
 tlc:
   java_class: tlc2.TLC
+  overrides_class: tlc2.overrides.TLCOverrides
 
 java:
   min_version: 11
@@ -59,40 +97,3 @@ java:
 *   **Java >= 11**: Required for TLC.
 *   [**uv**](https://docs.astral.sh/uv/getting-started/installation/): For installing the tool.
 
-## Usage
-
-### Download TLC
-
-```bash
-# Download stable release
-tla download tla
-
-# Download nightly build
-tla download tla --nightly
-```
-
-### Compile Custom Java Modules
-
-```bash
-tla build
-```
-
-Compiles `.java` files from `workspace/modules/` into `workspace/classes/`.
-
-### Run TLC
-
-```bash
-tla tlc <spec_name>
-```
-
-For example:
-
-```bash
-tla tlc queue
-```
-
-Override Java options at runtime:
-
-```bash
-JAVA_OPTS="-Xmx8g" tla tlc queue
-```

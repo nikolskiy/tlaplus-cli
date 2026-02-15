@@ -4,16 +4,9 @@
 
 CI + Release to github
 
-### CI Workflow
-Create `.github/workflows/ci.yml` to run checks on every push and PR.
 
 ### Release Steps
 1.  **Prepare**: Ensure all tests and linters pass locally.
-    ```bash
-    uv run pytest
-    uv run ruff check .
-    uv run mypy .
-    ```
 2.  **Bump Version**: Edit `pyproject.toml` to increment version.
 3.  **Commit**: `git commit -am "chore(release): bump version to 0.1.0"`
 4.  **Tag**: `git tag v0.1.0`
