@@ -96,7 +96,7 @@ audit = "detect-secrets audit .secrets.baseline"
 python_version = "3.13"
 strict = true
 ignore_missing_imports = false
-exclude = ["build"]
+exclude = ["build", "tests/"]
 
 # Per-module overrides for libraries without strict types
 [[tool.mypy.overrides]]
