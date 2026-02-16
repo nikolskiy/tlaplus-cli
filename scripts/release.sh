@@ -36,8 +36,10 @@ echo "Updated ${TOML}:"
 grep '^version' "$TOML"
 
 # ── Git commit, tag, push ──────────────────────────────────────────
+# Skip pre-commit hooks (--no-verify) because the release workflow
+# runs the full test suite on CI before publishing.
 git add -A
-git commit -m "Release ${TAG}"
+git commit --no-verify -m "Release ${TAG}"
 git tag "$TAG"
 git push origin main "$TAG"
 
