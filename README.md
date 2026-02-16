@@ -104,8 +104,11 @@ java:
 | Cache | `tla2tools.jar` | `~/.cache/tla/` |
 | Workspace | specs + modules + classes | Set via `workspace.root` in config |
 
+## Note on Package Name
+
+This package is distributed on PyPI as **`tlaplus-cli`** but imports as **`tla`**. There is a separate, unrelated [`tla`](https://pypi.org/project/tla/) package on PyPI (a TLA+ parser). If you have both installed, they will conflict. In practice this is unlikely since they serve different purposes, but be aware of it.
+
 ## Dependencies
 
 *   **Java >= 11**: Required for TLC.
 *   [**uv**](https://docs.astral.sh/uv/getting-started/installation/): For installing the tool.
-

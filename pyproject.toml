@@ -4,10 +4,10 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tlaplus-cli"
-version = "0.1.1"
+version = "0.1.3"
 description = "TLA+ tools: download TLC, compile custom modules, run model checker"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.11"
 dependencies = [
     "typer>=0.22.0,<1.0.0",
     "requests>=2.31.0,<3.0.0",
@@ -15,6 +15,26 @@ dependencies = [
     "platformdirs>=4.0,<5.0",
     "pydantic>=2.12.5,<3.0.0",
 ]
+authors = [
+    {name = "Denis Nikolskiy", email = "codeomatics@gmail.com"}
+]
+license = "MIT"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Operating System :: OS Independent",
+    "Topic :: Software Development :: Build Tools",
+    "Topic :: Software Development :: Utilities",
+]
+
+[project.urls]
+Homepage = "https://github.com/nikolskiy/tlaplus-cli"
+Repository = "https://github.com/nikolskiy/tlaplus-cli"
+Issues = "https://github.com/nikolskiy/tlaplus-cli/issues"
+Changelog = "https://github.com/nikolskiy/tlaplus-cli/blob/main/CHANGELOG.md"
 
 [project.scripts]
 tla = "tla.cli:main"
@@ -23,7 +43,7 @@ tla = "tla.cli:main"
 include = ["tla*"]
 
 [tool.setuptools.package-data]
-tla = ["resources/default_config.yaml"]
+tla = ["resources/default_config.yaml", "py.typed"]
 
 [dependency-groups]
 dev = [
@@ -38,6 +58,7 @@ dev = [
     "detect-secrets>=1.5.0,<2.0.0",
     "pre-commit>=3.5.0,<4.0.0",
     "pre-commit-hooks>=6.0.0,<7.0.0",
+    "twine>=6.0.0,<7.0.0",
 ]
 
 [tool.pytest.ini_options]
@@ -46,7 +67,7 @@ testpaths = ["tests"]
 
 [tool.ruff]
 line-length = 120
-target-version = "py313"
+target-version = "py311"
 
 [tool.ruff.lint]
 select = [
@@ -91,9 +112,21 @@ lint-fix = "ruff check --fix ."
 test = "pytest"
 install-hooks = "pre-commit install --install-hooks"
 audit = "detect-secrets audit .secrets.baseline"
+build = "uv build"
+clean = "rm -rf dist"
+
+twine-check = "twine check dist/*.whl dist/*.tar.gz"
+
+[tool.poe.tasks.check-release]
+sequence = [
+    "check",
+    "clean",
+    "build",
+    "twine-check",
+]
 
 [tool.mypy]
-python_version = "3.13"
+python_version = "3.11"
 strict = true
 ignore_missing_imports = false
 exclude = ["build", "tests/"]

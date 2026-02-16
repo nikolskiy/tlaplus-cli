@@ -1,0 +1,4 @@
+include LICENSE
+include README.md
+recursive-include tla/resources *.yaml
+include tla/py.typed

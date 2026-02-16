@@ -5,19 +5,20 @@ Here is your "Go-Live" checklist to transform local repo into an automated relea
 ## Phase 1: Local Project Configuration (`pyproject.toml`)
 
 * [ ] **Audit Project Metadata:**
-* Ensure `[project]` table has `name`, `version`, `description`, `readme`, `requires-python`, `license`, `authors`, and `classifiers`.
-* *Critical:* Verify the `readme` file path matches your actual file (e.g., `README.md`).
+  * [x] Ensure `[project]` table has `name`, `version`, `description`, `readme`, `requires-python`.
+  * [ ] **Missing:** `license`, `authors`, and `classifiers`.
+  * [x] *Critical:* Verify the `readme` file path matches your actual file (e.g., `README.md`).
 
 
-* [ ] **Verify Build System:**
-* Confirm the `[build-system]` block exists (usually pointing to `hatchling` or similar if initialized with `uv`).
+* [x] **Verify Build System:**
+  * [x] Confirm the `[build-system]` block exists (using fast, standard `setuptools` backend).
 
 
 * [ ] **Define Poe Tasks:**
-* Add a `clean` task: `rm -rf dist` (or platform-equivalent).
-* Add a `build` task: `uv build`.
-* Add a `test` task: `uv run pytest` (or your specific test command).
-* *(Optional)* Add a `check-release` task: `sequence = ["clean", "test", "build", "cmd:twine check dist/*"]`.
+  * [ ] **Missing:** Add a `clean` task: `rm -rf dist` (or platform-equivalent).
+  * [ ] **Missing:** Add a `build` task: `uv build`.
+  * [x] Add a `test` task: `uv run pytest` (or your specific test command).
+  * [ ] **Missing:** Add a `check-release` task: `sequence = ["clean", "test", "build", "cmd:twine check dist/*"]`.
 
 
 ## Phase 2: GitHub Repository Configuration
