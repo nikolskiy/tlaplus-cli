@@ -20,7 +20,7 @@ app = typer.Typer(
 
 def version_callback(value: bool) -> None:
     if value:
-        meta = importlib.metadata.metadata("tla-cli")
+        meta = importlib.metadata.metadata("tlaplus-cli")
         typer.echo(f"{meta['Name']} v{meta['Version']}")
         typer.echo(meta["Summary"])
         raise typer.Exit()

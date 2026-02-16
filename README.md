@@ -4,9 +4,21 @@ Command-line tool for working with TLA+ specifications and the TLC model checker
 
 ## Installation
 
+Install system-wide via uv tool
+
 ```bash
-# Install system-wide via uv tool
 uv tool install git+https://github.com/nikolskiy/tlaplus-cli
+```
+
+Upgrade:
+```bash
+uv tool upgrade tlaplus-cli
+```
+
+Uninstall
+
+```bash
+uv tool uninstall tlaplus-cli
 ```
 
 ## Usage
