@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tlaplus-cli"
-version = "0.1.5"
+version = "0.1.6"
 description = "TLA+ tools: download TLC, compile custom modules, run model checker"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -27,7 +27,7 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Operating System :: OS Independent",
     "Topic :: Software Development :: Build Tools",
-    "Topic :: Software Development :: Utilities",
+    "Topic :: Utilities",
 ]
 
 [project.urls]

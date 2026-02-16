@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.6] - 2026-02-16
+
+### Added
+
+- Automated release workflow (`.github/workflows/release.yml`) for GitHub Releases and PyPI publishing.
+- `scripts/release.sh` helper script to simplify version bumping and tagging.
+
+### Fixed
+
+- Corrected invalid PyPI classifier (`Topic :: Utilities`) that caused upload failures.
+- Added comprehensive test suite execution (Java check, linting, tests) to the release workflow.
+
 ## [0.1.3] - 2026-02-16
 
 ### Added
