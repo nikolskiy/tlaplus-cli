@@ -5,7 +5,13 @@ A step-by-step guide to creating Java operator overrides for use with the TLC mo
 ## 1. Project Prerequisites
 
 - **Java Version**: Java 11 or higher.
-- **Dependencies**: `tla2tools.jar` — contains the base classes (`Value`, `ITLCOverrides`) and annotations (`@TLAPlusOperator`). Download it from the [TLA+ GitHub releases](https://github.com/tlaplus/tlaplus/releases) or find it in your Toolbox installation.
+- **Dependencies**: `tla2tools.jar` — contains the base classes (`Value`, `ITLCOverrides`) and annotations (`@TLAPlusOperator`).
+
+### Manual Setup
+Download `tla2tools.jar` from the [TLA+ GitHub releases](https://github.com/tlaplus/tlaplus/releases) or find it in your Toolbox installation. Place it in a `lib/` directory in your project.
+
+### Using `tlaplus-cli`
+Run `tla download` to automatically fetch the latest stable release into your system cache (`~/.cache/tla/tla2tools.jar`).
 
 ## 2. Directory and Package Structure
 
@@ -29,7 +35,7 @@ my-tla-project/
 ├── spec/
 │   ├── queue.tla                   <-- Your TLA+ specification
 │   └── QueueUtils.tla              <-- TLA+ wrapper module
-├── lib/
+├── lib/                            <-- Required only for manual setup
 │   └── tla2tools.jar
 ```
 
@@ -141,19 +147,19 @@ mkdir -p classes/META-INF/services
 echo "tlc2.overrides.TLCOverrides" > classes/META-INF/services/tlc2.overrides.ITLCOverrides
 ```
 
-### Using This Project's CLI
+### Using `tlaplus-cli`
 
 ```bash
-./run build
+tla build
 ```
 
-This compiles all Java files in `modules/`, outputs class files to `classes/`, and creates the service file automatically.
+This compiles all Java files in your configured modules directory (default: `modules/`), outputs class files to `classes/`, and creates the `ServiceLoader` file automatically. It also automatically fetches the downloaded `tla2tools.jar` from your cache.
 
 ## 7. Execution
 
 Your compiled classes (or JAR) must be on the classpath **before** `tla2tools.jar`.
 
-### Command Line
+### Manual Execution
 
 **Unix/Linux** (separator is `:`):
 ```bash
@@ -165,13 +171,13 @@ java -cp classes:lib/tla2tools.jar tlc2.TLC spec/queue.tla
 java -cp classes;lib\tla2tools.jar tlc2.TLC spec\queue.tla
 ```
 
-### Using This Project's CLI
+### Using `tlaplus-cli`
 
 ```bash
-./run tlc queue
+tla tlc queue
 ```
 
-The script automatically prepends the `classes/` directory (or `lib/QueueUtils.jar` if present) to the classpath.
+The CLI automatically constructs the correct classpath using your cached `tla2tools.jar` and your compiled `classes/` directory, and runs `tlc2.TLC` with the appropriate Java garbage collection options.
 
 ### Using TLA+ Toolbox
 
@@ -205,7 +211,7 @@ pw.flush();
 pw.close();
 ```
 
-The file path is relative to TLC's working directory (the spec directory when using `./run tlc`).
+The file path is relative to TLC's working directory (the spec directory when using `tla tlc`).
 
 ## 9. Debugging
 
@@ -271,7 +277,7 @@ javac -cp classes:lib/tla2tools.jar TestOverride.java
 java -cp .:classes:lib/tla2tools.jar TestOverride
 ```
 
-> **Note**: Even if this test succeeds, TLC may still not load your override if the class is not named `TLCOverrides`, because TLC uses `Class.forName()` with the hardcoded name — not `ServiceLoader`.
+> **Note**: Even if this test succeeds, TLC may still not load your override if the class is not named `TLCOverrides`, because TLC uses `Class.forName()` with the hardcoded name - not `ServiceLoader`.
 
 ### Classpath Order Matters
 
