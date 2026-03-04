@@ -58,6 +58,18 @@ This means:
 
 Naming the class to match your TLA+ module (e.g., `QueueUtils.java` for `QueueUtils.tla`) — TLC will silently ignore it and use the pure TLA+ definition instead.
 
+> ### 📝 Needs Verification: Class Naming
+>
+> According to TLA+ documentation ([TLA+ Wiki: codebase:idiosyncrasies](https://docs.tlapl.us/codebase:idiosyncrasies), [tlaplus/tlaplus#1114](https://github.com/tlaplus/tlaplus/issues/1114)), TLC dynamically resolves subclasses through `SimpleFilenameToStream`, which means **the Java class name must perfectly match the TLA+ module name** (e.g., `QueueUtils.java` for `QueueUtils.tla`). It relies on a specialized, custom class-loading mechanism (not Java's `ServiceLoader`).
+>
+> This means:
+> - Your Java class **must** be named exactly after your TLA+ module (e.g., `QueueUtils.java` for `QueueUtils.tla`) ([TLA+ Wiki: codebase:idiosyncrasies](https://docs.tlapl.us/codebase:idiosyncrasies)).
+> - It must reside within the `tlc2.overrides` package (modern convention) ([TLA+ Wiki: codebase:idiosyncrasies](https://docs.tlapl.us/codebase:idiosyncrasies)).
+> - The `@TLAPlusOperator` annotation's `module` attribute must explicitly map to this target module ([tlaplus/tlaplus#326](https://github.com/tlaplus/tlaplus/issues/326)).
+> - The class must implement the `tlc2.overrides.ITLCOverrides` interface ([tlaplus/tlaplus#1114](https://github.com/tlaplus/tlaplus/issues/1114)).
+>
+> **Potential Resolution:** Naming the class something generic like `TLCOverrides.java` might cause TLC to silently fail to bind the override and use the pure TLA+ definition instead, without crashing ([tlaplus/tlaplus#1114](https://github.com/tlaplus/tlaplus/issues/1114)).
+
 ## 4. Java Implementation
 
 Your class must:
@@ -119,6 +131,14 @@ public class TLCOverrides implements ITLCOverrides {
     }
 }
 ```
+
+> ### 📝 Needs Verification: Java Implementation
+>
+> **Method Signature and Values**: Modern versions (TLC > 1.5.8) use the `tlc2.value.impl` package for these types ([Stack Overflow: module overloading](https://stackoverflow.com/questions/53908653/use-module-overloading-to-implement-a-hash-function-in-tla)).
+> 
+> **Thread Safety Requirements**: TLC is highly parallelized. Methods must be **strictly thread-safe** (Technical Architecture of TLC Overrides). Treat methods as pure functions (Technical Architecture of TLC Overrides). For shared state, protect sections with `synchronized` or use `TLCGet`/`TLCSet` for per-thread storage ([Learn TLA+: Modules](https://learntla.com/core/modules.html)).
+>
+> **Supporting Multiple TLA+ Modules**: If you have overrides for multiple TLA+ modules, you might need to create a separate Java class for each module matching its name (e.g., `QueueUtils.java` and `CryptoUtils.java`), rather than combining them into one `TLCOverrides.java`.
 
 ## 5. TLA+ Wrapper Module
 
@@ -235,6 +255,16 @@ If this line is **missing**, TLC did not find your override class.
 5. The compiled classes are on the classpath *before* `tla2tools.jar`
 6. The `@TLAPlusOperator` annotation's `module` matches the TLA+ module name exactly
 
+> ### 📝 Needs Verification: Debugging Configuration
+> 
+> If the class naming rule requires matching the TLA+ module exactly, the checklist item #1 and #4 above are likely incorrect.
+>
+> **Updated Checklist Approach:**
+> 1. The Java class name matches the TLA+ module name perfectly (e.g. `QueueUtils.java`).
+> 2. It's in the `tlc2.overrides` package.
+> 3. It implements `ITLCOverrides`.
+> 4. The `get()` method returns `new Class[]{QueueUtils.class}` for that specific mapping.
+
 ### Verifying Class Loading
 
 Add a static initializer to confirm the class is loaded:
@@ -283,6 +313,10 @@ java -cp .:classes:lib/tla2tools.jar TestOverride
 
 Your classes must appear **before** `tla2tools.jar` in the classpath. If reversed, TLC won't find your overrides since it stops searching after loading its own classes.
 
+> ### 📝 Needs Verification: Shadowing Details
+>
+> When the JVM searches for compiled class files, the first occurrence of a particular file or class shadows (hides) any subsequent occurrences ([Oracle: The javac Command](https://docs.oracle.com/en/java/javase/21/docs/specs/man/javac.html)). Hence, your classes must appear **before** `tla2tools.jar` in the classpath to override default implementations. Note that if running from the command line, failure to include *both* your custom JAR and `tla2tools.jar` will result in a `NoClassDefFoundError` or cause the overrides to fail silently (Technical Architecture of TLC Overrides).
+
 ### Multiple Override Modules
 
 If you have overrides spread across multiple Java classes, all classes must be returned by `TLCOverrides.get()`:
@@ -293,3 +327,7 @@ public Class[] get() {
     return new Class[]{TLCOverrides.class, AnotherOverride.class};
 }
 ```
+
+> ### 📝 Needs Verification: Class Resolution
+>
+> If TLC uses `SimpleFilenameToStream` to resolve class names against module names, it will likely independently search for each class named after the target module ([TLA+ Wiki: codebase:idiosyncrasies](https://docs.tlapl.us/codebase:idiosyncrasies)). Having a central `get()` method referencing multiple unrelated classes might be ineffective.
