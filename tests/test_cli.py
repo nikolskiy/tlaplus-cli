@@ -1,4 +1,3 @@
-
 import pytest
 import typer
 from typer.testing import CliRunner

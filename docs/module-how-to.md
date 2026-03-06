@@ -43,6 +43,8 @@ my-tla-project/
 
 > ⚠️ **This is the single most important thing to get right.**
 
+> **[Unverified Claim]**: TLC discovering operator overrides by hardcoding the class name `tlc2.overrides.TLCOverrides` and checking via `tlc2.tool.impl.SpecProcessor` is unverified.
+
 TLC discovers operator overrides by **hardcoding** the class name `tlc2.overrides.TLCOverrides`. It does *not* use Java's `ServiceLoader` mechanism, despite the existence of the `ITLCOverrides` interface. The relevant code in `tlc2.tool.impl.SpecProcessor` does:
 
 ```java
@@ -114,6 +116,8 @@ public class TLCOverrides implements ITLCOverrides {
 
 ### Supporting Multiple TLA+ Modules
 
+> **[Unverified Claim]**: Overrides for multiple modules can be added using the `get()` method returning an array of classes.
+
 If you have overrides for multiple TLA+ modules, put them all in `TLCOverrides` (or reference additional classes from `get()`):
 
 ```java
@@ -136,13 +140,13 @@ public class TLCOverrides implements ITLCOverrides {
 >
 > **Method Signature and Values**: Modern versions (TLC > 1.5.8) use the `tlc2.value.impl` package for these types ([Stack Overflow: module overloading](https://stackoverflow.com/questions/53908653/use-module-overloading-to-implement-a-hash-function-in-tla)).
 > 
-> **Thread Safety Requirements**: TLC is highly parallelized. Methods must be **strictly thread-safe** (Technical Architecture of TLC Overrides). Treat methods as pure functions (Technical Architecture of TLC Overrides). For shared state, protect sections with `synchronized` or use `TLCGet`/`TLCSet` for per-thread storage ([Learn TLA+: Modules](https://learntla.com/core/modules.html)).
+> **Thread Safety Requirements**: TLC is highly parallelized. Methods must be **strictly thread-safe** ([Unverified: Technical Architecture of TLC Overrides]). Treat methods as pure functions ([Unverified: Technical Architecture of TLC Overrides]). For shared state, protect sections with `synchronized` or use `TLCGet`/`TLCSet` for per-thread storage ([Learn TLA+: Modules](https://learntla.com/core/modules.html)).
 >
 > **Supporting Multiple TLA+ Modules**: If you have overrides for multiple TLA+ modules, you might need to create a separate Java class for each module matching its name (e.g., `QueueUtils.java` and `CryptoUtils.java`), rather than combining them into one `TLCOverrides.java`.
 
 ## 5. TLA+ Wrapper Module
 
-You need a `.tla` file that declares the operator signatures. TLC will replace these definitions with your Java overrides at runtime. This file also serves as a fallback for tools that don't support Java overrides (SANY, Apalache).
+You need a `.tla` file that declares the operator signatures. TLC will replace these definitions with your Java overrides at runtime. This file also serves as a fallback for tools that don't support Java overrides (SANY, Apalache) [Unverified: Technical Architecture of TLC Overrides].
 
 ```tla
 ---- MODULE QueueUtils ----
@@ -161,6 +165,8 @@ Place this in the same directory as your main specification so TLC can find it.
 ```bash
 # Compile
 javac -cp lib/tla2tools.jar -d classes modules/tlc2/overrides/TLCOverrides.java
+
+> **[Unverified Claim]**: The ServiceLoader mechanism requiring a `META-INF/services/tlc2.overrides.ITLCOverrides` file is unverified.
 
 # Create the ServiceLoader service file
 mkdir -p classes/META-INF/services
@@ -213,6 +219,8 @@ Configure the `tlaplus.java.options` setting in your `settings.json`:
 ```
 
 ## 8. Console Output
+
+> **[Unverified Claim]**: `System.out.println` and `FileWriter` appending logs to the terminal/disk is unverified.
 
 `System.out.println` **works** from Java overrides. Output appears in the terminal alongside TLC's own output:
 
@@ -315,7 +323,7 @@ Your classes must appear **before** `tla2tools.jar` in the classpath. If reverse
 
 > ### 📝 Needs Verification: Shadowing Details
 >
-> When the JVM searches for compiled class files, the first occurrence of a particular file or class shadows (hides) any subsequent occurrences ([Oracle: The javac Command](https://docs.oracle.com/en/java/javase/21/docs/specs/man/javac.html)). Hence, your classes must appear **before** `tla2tools.jar` in the classpath to override default implementations. Note that if running from the command line, failure to include *both* your custom JAR and `tla2tools.jar` will result in a `NoClassDefFoundError` or cause the overrides to fail silently (Technical Architecture of TLC Overrides).
+> When the JVM searches for compiled class files, the first occurrence of a particular file or class shadows (hides) any subsequent occurrences ([Oracle: The javac Command](https://docs.oracle.com/en/java/javase/21/docs/specs/man/javac.html)). Hence, your classes must appear **before** `tla2tools.jar` in the classpath to override default implementations. Note that if running from the command line, failure to include *both* your custom JAR and `tla2tools.jar` will result in a `NoClassDefFoundError` or cause the overrides to fail silently ([Unverified: Technical Architecture of TLC Overrides]).
 
 ### Multiple Override Modules
 
