@@ -76,3 +76,31 @@ def test_run_tlc_integration(mocker, tmp_path, capfd, queue_dir, base_settings):
     # We combine them or check both if needed, but usually it's stdout.
     # Let's check for the module override log explicitly.
     assert "State log test:" in stdout
+
+
+def test_tlc_version_flag(mocker, capfd, base_settings):
+    """Test that 'tla tlc --version' prints the jar path and version."""
+    mocker.patch("tla.run_tlc.load_config", return_value=base_settings)
+
+    # We patch cache_dir to return a mock Path
+    mock_jar_path = mocker.MagicMock()
+    mock_jar_path.exists.return_value = True
+    mock_jar_path.__str__.return_value = "/mock/path/tla2tools.jar"
+
+    mock_cache_dir = mocker.MagicMock()
+    mock_cache_dir.__truediv__.return_value = mock_jar_path
+    mocker.patch("tla.run_tlc.cache_dir", return_value=mock_cache_dir)
+
+    mock_result = mocker.MagicMock()
+    mock_result.stdout = "TLC2 Version Mock\\nSome other output"
+    mock_result.stderr = ""
+    mocker.patch("tla.run_tlc.subprocess.run", return_value=mock_result)
+
+    with pytest.raises(typer.Exit) as exc_info:
+        run_tlc.version_callback(True)
+
+    assert exc_info.value.exit_code == 0
+
+    captured = capfd.readouterr()
+    assert "tla2tools.jar path:" in captured.out
+    assert "TLC2 Version Mock" in captured.out

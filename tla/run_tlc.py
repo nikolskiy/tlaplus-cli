@@ -9,10 +9,44 @@ from tla.check_java import check_java_version
 from tla.config import cache_dir, load_config, workspace_root
 
 
+def version_callback(value: bool) -> None:
+    if value:
+        config = load_config()
+        jar_path = cache_dir() / config.tla.jar_name
+        typer.echo(f"{config.tla.jar_name} path: {jar_path}")
+
+        if not jar_path.exists():
+            typer.echo(f"Error: {config.tla.jar_name} not found at {jar_path}", err=True)
+            typer.echo("Run 'tla download' first.", err=True)
+            raise typer.Exit(1)
+
+        cmd = ["java", "-cp", str(jar_path), config.tlc.java_class]
+        try:
+            result = subprocess.run(cmd, capture_output=True, text=True, check=False)
+            output = result.stdout or result.stderr
+            if output:
+                first_line = output.splitlines()[0]
+                typer.echo(first_line)
+        except FileNotFoundError as err:
+            typer.echo("Error: java not found.", err=True)
+            raise typer.Exit(1) from err
+
+        raise typer.Exit(0)
+
+
 def tlc(
     spec: str = typer.Argument(help="Name of the TLA+ specification (without .tla extension)."),
+    version: bool | None = typer.Option(
+        None,
+        "--version",
+        help="Print the path to tla2tools.jar and its version.",
+        callback=version_callback,
+        is_eager=True,
+    ),
 ) -> None:
     """Run TLC model checker on a TLA+ specification."""
+    if version:
+        pass
     config = load_config()
 
     # Check Java version before proceeding
