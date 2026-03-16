@@ -1,0 +1,7 @@
+# Custom Java Modules in TLC: Recommendations and Risks
+
+If you are writing custom Java modules that introduce statefulness, modify variables, or manipulate states, here are the core recommendations and risks to consider:
+
+* **Thread Safety is Critical:** TLC is highly parallelized and relies on multiple worker threads to concurrently compute the graph of reachable states. Because custom TLC module overrides are generally implemented as static Java methods, any shared Java variables or mutable objects you modify within those methods must be explicitly synchronized to ensure thread safety.
+* **Loss of Referential Transparency:** TLA+ is based on mathematics and fundamentally assumes that operators are pure functions. Operators that modify state behind the scenes break core assumptions about TLA+ (such as referential transparency) and should be used with extreme caution.
+* **Consider Built-in `TLCSet` and `TLCGet`:** If your goal is simply to record statistics, count events, or track costs independently of the model's state space, you may not need to write a custom Java variable. TLC natively provides the `TLCSet` and `TLCGet` operators to read and write to a global scratchpad during expression evaluation. However, you must be careful: when running TLC with multiple worker threads, each thread maintains its own distinct cache of these values, so they are generally inadvisable for information that must persist beyond a single step.
