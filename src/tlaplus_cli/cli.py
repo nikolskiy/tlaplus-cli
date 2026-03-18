@@ -4,11 +4,11 @@ import importlib.metadata
 
 import typer
 
-from tla.build_tlc_module import build as build_tlc_cmd
-from tla.check_java import check_java_version, get_java_version
-from tla.config import load_config
-from tla.download_tla2tools import tla as download_tla_cmd
-from tla.run_tlc import tlc as run_tlc_cmd
+from tlaplus_cli.build_tlc_module import build as build_tlc_cmd
+from tlaplus_cli.check_java import check_java_version, get_java_version
+from tlaplus_cli.config import load_config
+from tlaplus_cli.download_tla2tools import tla as download_tla_cmd
+from tlaplus_cli.run_tlc import tlc as run_tlc_cmd
 
 app = typer.Typer(
     name="tla",

@@ -37,13 +37,14 @@ Issues = "https://github.com/nikolskiy/tlaplus-cli/issues"
 Changelog = "https://github.com/nikolskiy/tlaplus-cli/blob/main/CHANGELOG.md"
 
 [project.scripts]
-tla = "tla.cli:main"
+tla = "tlaplus_cli.cli:main"
 
 [tool.setuptools.packages.find]
-include = ["tla*"]
+where = ["src"]
+include = ["tlaplus_cli*"]
 
 [tool.setuptools.package-data]
-tla = ["resources/default_config.yaml", "py.typed"]
+tlaplus_cli = ["resources/default_config.yaml", "py.typed"]
 
 [dependency-groups]
 dev = [
@@ -62,7 +63,7 @@ dev = [
 ]
 
 [tool.pytest.ini_options]
-addopts = "--cov=tla --cov-report=term-missing"
+addopts = "--cov=tlaplus_cli --cov-report=term-missing"
 testpaths = ["tests"]
 
 [tool.ruff]

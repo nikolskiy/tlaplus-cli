@@ -5,7 +5,7 @@ from pathlib import Path
 import platformdirs
 import yaml
 
-from tla.settings import Settings
+from tlaplus_cli.settings import Settings
 
 _APP_NAME = "tla"
 

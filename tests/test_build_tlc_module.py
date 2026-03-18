@@ -3,7 +3,7 @@ import shutil
 import pytest
 from typer.testing import CliRunner
 
-from tla.cli import app
+from tlaplus_cli.cli import app
 
 runner = CliRunner()
 
@@ -27,10 +27,10 @@ def test_build_integration(mocker, tmp_path, queue_dir, base_settings):
     base_settings.workspace.classes_dir = classes_dir
 
     # Patch load_config to return our mock config
-    mocker.patch("tla.build_tlc_module.load_config", return_value=base_settings)
+    mocker.patch("tlaplus_cli.build_tlc_module.load_config", return_value=base_settings)
 
     # Patch workspace_root to return the example directory
-    mocker.patch("tla.build_tlc_module.workspace_root", return_value=queue_dir)
+    mocker.patch("tlaplus_cli.build_tlc_module.workspace_root", return_value=queue_dir)
 
     # Run build
     result = runner.invoke(app, ["build", "--verbose"])
@@ -66,8 +66,8 @@ def test_build_custom_overrides(mocker, tmp_path, queue_dir, base_settings):
     base_settings.workspace.root = queue_dir
     base_settings.workspace.classes_dir = classes_dir
 
-    mocker.patch("tla.build_tlc_module.load_config", return_value=base_settings)
-    mocker.patch("tla.build_tlc_module.workspace_root", return_value=queue_dir)
+    mocker.patch("tlaplus_cli.build_tlc_module.load_config", return_value=base_settings)
+    mocker.patch("tlaplus_cli.build_tlc_module.workspace_root", return_value=queue_dir)
 
     result = runner.invoke(app, ["build"])
     assert result.exit_code == 0, f"Build failed: {result.stdout}"

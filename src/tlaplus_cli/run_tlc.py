@@ -5,8 +5,8 @@ import subprocess
 
 import typer
 
-from tla.check_java import check_java_version
-from tla.config import cache_dir, load_config, workspace_root
+from tlaplus_cli.check_java import check_java_version
+from tlaplus_cli.config import cache_dir, load_config, workspace_root
 
 
 def version_callback(value: bool) -> None:

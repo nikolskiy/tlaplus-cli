@@ -4,7 +4,7 @@ import subprocess
 
 import typer
 
-from tla.config import cache_dir, load_config, workspace_root
+from tlaplus_cli.config import cache_dir, load_config, workspace_root
 
 
 def build(

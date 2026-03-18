@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from tla.settings import Settings
+from tlaplus_cli.settings import Settings
 
 PROJECT_ROOT = Path(__file__).parent.parent
 FIXTURES_DIR = PROJECT_ROOT / "tests/fixtures"
@@ -57,7 +57,7 @@ def base_settings(tmp_path: Path) -> Settings:
 @pytest.fixture
 def mock_load_config(mocker, base_settings):
     """
-    Patches tla.config.load_config to return base_settings.
+    Patches tlaplus_cli.config.load_config to return base_settings.
     Also patches consumers in specific modules if they import it directly.
     """
-    return mocker.patch("tla.config.load_config", return_value=base_settings)
+    return mocker.patch("tlaplus_cli.config.load_config", return_value=base_settings)

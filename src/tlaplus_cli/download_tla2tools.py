@@ -9,8 +9,8 @@ from pathlib import Path
 import requests
 import typer
 
-from tla.check_java import check_java_version
-from tla.config import cache_dir, load_config
+from tlaplus_cli.check_java import check_java_version
+from tlaplus_cli.config import cache_dir, load_config
 
 
 def _get_version(jar_path: Path) -> str | None:

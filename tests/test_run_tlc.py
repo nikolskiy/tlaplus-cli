@@ -3,7 +3,7 @@ import shutil
 import pytest
 from typer.testing import CliRunner
 
-from tla.cli import app
+from tlaplus_cli.cli import app
 
 runner = CliRunner()
 
@@ -40,13 +40,13 @@ def test_run_tlc_integration(mocker, tmp_path, capfd, queue_dir, base_settings):
     base_settings.workspace.root = queue_dir
     base_settings.workspace.classes_dir = classes_dir
 
-    mocker.patch("tla.run_tlc.load_config", return_value=base_settings)
-    mocker.patch("tla.run_tlc.workspace_root", return_value=queue_dir)
+    mocker.patch("tlaplus_cli.run_tlc.load_config", return_value=base_settings)
+    mocker.patch("tlaplus_cli.run_tlc.workspace_root", return_value=queue_dir)
 
     # We also need to patch build_tlc_module's config loading to compile first
-    mocker.patch("tla.build_tlc_module.load_config", return_value=base_settings)
+    mocker.patch("tlaplus_cli.build_tlc_module.load_config", return_value=base_settings)
     # Patch workspace_root for build_tlc_module
-    mocker.patch("tla.build_tlc_module.workspace_root", return_value=queue_dir)
+    mocker.patch("tlaplus_cli.build_tlc_module.workspace_root", return_value=queue_dir)
 
     # 1. Compile modules
     res_build = runner.invoke(app, ["build"])
@@ -74,7 +74,7 @@ def test_run_tlc_integration(mocker, tmp_path, capfd, queue_dir, base_settings):
 
 def test_tlc_version_flag(mocker, capfd, base_settings):
     """Test that 'tla tlc --version' prints the jar path and version."""
-    mocker.patch("tla.run_tlc.load_config", return_value=base_settings)
+    mocker.patch("tlaplus_cli.run_tlc.load_config", return_value=base_settings)
 
     # We patch cache_dir to return a mock Path
     mock_jar_path = mocker.MagicMock()
@@ -83,12 +83,12 @@ def test_tlc_version_flag(mocker, capfd, base_settings):
 
     mock_cache_dir = mocker.MagicMock()
     mock_cache_dir.__truediv__.return_value = mock_jar_path
-    mocker.patch("tla.run_tlc.cache_dir", return_value=mock_cache_dir)
+    mocker.patch("tlaplus_cli.run_tlc.cache_dir", return_value=mock_cache_dir)
 
     mock_result = mocker.MagicMock()
     mock_result.stdout = "TLC2 Version Mock\\nSome other output"
     mock_result.stderr = ""
-    mocker.patch("tla.run_tlc.subprocess.run", return_value=mock_result)
+    mocker.patch("tlaplus_cli.run_tlc.subprocess.run", return_value=mock_result)
 
     result = runner.invoke(app, ["tlc", "--version"])
     assert result.exit_code == 0

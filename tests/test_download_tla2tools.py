@@ -5,7 +5,7 @@ import requests
 import typer
 from typer.testing import CliRunner
 
-from tla.cli import app
+from tlaplus_cli.cli import app
 
 runner = CliRunner()
 
@@ -22,8 +22,8 @@ def mock_config(mocker, tmp_path, base_settings):
     # But let's keep mkdir just in case tests rely on it existing.
     cache_dir.mkdir()
 
-    mocker.patch("tla.download_tla2tools.load_config", return_value=base_settings)
-    mocker.patch("tla.download_tla2tools.cache_dir", return_value=cache_dir)
+    mocker.patch("tlaplus_cli.download_tla2tools.load_config", return_value=base_settings)
+    mocker.patch("tlaplus_cli.download_tla2tools.cache_dir", return_value=cache_dir)
     return base_settings, cache_dir
 
 
@@ -36,13 +36,13 @@ def mock_requests(mocker):
 @pytest.fixture
 def mock_check_java(mocker):
     """Mock check_java_version."""
-    return mocker.patch("tla.download_tla2tools.check_java_version")
+    return mocker.patch("tlaplus_cli.download_tla2tools.check_java_version")
 
 
 @pytest.fixture
 def mock_get_version(mocker):
     """Mock _get_version."""
-    return mocker.patch("tla.download_tla2tools._get_version", return_value="2.19")
+    return mocker.patch("tlaplus_cli.download_tla2tools._get_version", return_value="2.19")
 
 
 def test_download_create(mock_config, mock_requests, mock_check_java, mock_get_version):

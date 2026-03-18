@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
-from tla.cli import app
+from tlaplus_cli.cli import app
 
 runner = CliRunner()
 
@@ -34,10 +34,10 @@ def setup_naming_env(tmp_path, mocker, base_settings, fixture_dir):
     base_settings.workspace.spec_dir = "spec"
     base_settings.workspace.classes_dir = str(classes_dir)
 
-    mocker.patch("tla.build_tlc_module.load_config", return_value=base_settings)
-    mocker.patch("tla.build_tlc_module.workspace_root", return_value=fixture_dir)
-    mocker.patch("tla.run_tlc.load_config", return_value=base_settings)
-    mocker.patch("tla.run_tlc.workspace_root", return_value=fixture_dir)
+    mocker.patch("tlaplus_cli.build_tlc_module.load_config", return_value=base_settings)
+    mocker.patch("tlaplus_cli.build_tlc_module.workspace_root", return_value=fixture_dir)
+    mocker.patch("tlaplus_cli.run_tlc.load_config", return_value=base_settings)
+    mocker.patch("tlaplus_cli.run_tlc.workspace_root", return_value=fixture_dir)
 
 
 @pytest.mark.skipif(not JAVA_AVAILABLE, reason="java not found")

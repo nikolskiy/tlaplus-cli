@@ -2,7 +2,7 @@ import pytest
 import typer
 from typer.testing import CliRunner
 
-from tla.cli import app, version_callback
+from tlaplus_cli.cli import app, version_callback
 
 runner = CliRunner()
 
