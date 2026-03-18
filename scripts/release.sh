@@ -1,45 +1,31 @@
 #!/usr/bin/env bash
-# Bump the patch version in pyproject.toml, commit, tag, and push.
+# Verifies version in pyproject.toml, tags the release, and pushes.
 #
 # Usage:
-#   ./scripts/release.sh          # bump patch  (0.1.5 → 0.1.6)
-#   ./scripts/release.sh minor    # bump minor  (0.1.5 → 0.2.0)
-#   ./scripts/release.sh major    # bump major  (0.1.5 → 1.0.0)
+#   ./scripts/release.sh
 
 set -euo pipefail
 
-PART="${1:-patch}"
 TOML="pyproject.toml"
+CHANGELOG="CHANGELOG.md"
 
 # ── Read current version ────────────────────────────────────────────
-CURRENT=$(grep -m1 '^version' "$TOML" | sed 's/version = "\(.*\)"/\1/')
-IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
+VERSION=$(grep -m1 '^version' "$TOML" | sed 's/version = "\(.*\)"/\1/')
+TAG="v${VERSION}"
 
-# ── Compute new version ─────────────────────────────────────────────
-case "$PART" in
-  major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
-  minor) MINOR=$((MINOR + 1)); PATCH=0 ;;
-  patch) PATCH=$((PATCH + 1)) ;;
-  *)     echo "Usage: $0 [major|minor|patch]"; exit 1 ;;
-esac
+# ── Check if tag already exists ─────────────────────────────────────
+if git rev-parse "refs/tags/$TAG" >/dev/null 2>&1; then
+  echo "Tag with ${VERSION} already exists. Please change the version to proceed."
+  exit 1
+fi
 
-NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
-TAG="v${NEW_VERSION}"
+# ── Check if version is in CHANGELOG.md ─────────────────────────────
+if ! grep -q "\[${VERSION}\]" "$CHANGELOG"; then
+  echo "Entry for version ${VERSION} is missing in ${CHANGELOG}. Please add the entry into the change log to proceed."
+  exit 1
+fi
 
-echo "Bumping version: ${CURRENT} → ${NEW_VERSION}"
-
-# ── Update pyproject.toml ───────────────────────────────────────────
-sed -i "s/^version = \"${CURRENT}\"/version = \"${NEW_VERSION}\"/" "$TOML"
-
-# ── Verify the change ──────────────────────────────────────────────
-echo "Updated ${TOML}:"
-grep '^version' "$TOML"
-
-# ── Git commit, tag, push ──────────────────────────────────────────
-# Skip pre-commit hooks (--no-verify) because the release workflow
-# runs the full test suite on CI before publishing.
-git add -A
-git commit --no-verify -m "Release ${TAG}"
+# ── Git tag and push ───────────────────────────────────────────────
 git tag "$TAG"
 git push origin main "$TAG"
 

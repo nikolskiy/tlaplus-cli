@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.8] - 2026-03-18
+
+### Changed
+
+- Refactored `tla` source directory to use the standard Python `src/tlaplus_cli` layout.
+- Renamed the internal Python package to `tlaplus_cli` to avoid global namespace collisions on PyPI while keeping the external `tla` CLI command name.
+- Improved tests.
+
 ## [0.1.6] - 2026-02-16
 
 ### Added
