@@ -1,9 +1,11 @@
 import shutil
 
 import pytest
-import typer
+from typer.testing import CliRunner
 
-from tla import build_tlc_module, run_tlc
+from tla.cli import app
+
+runner = CliRunner()
 
 # Define paths relative to the test file
 # Check if java is available
@@ -47,28 +49,20 @@ def test_run_tlc_integration(mocker, tmp_path, capfd, queue_dir, base_settings):
     mocker.patch("tla.build_tlc_module.workspace_root", return_value=queue_dir)
 
     # 1. Compile modules
-    try:
-        build_tlc_module.build(verbose=False)
-    except (SystemExit, typer.Exit) as e:
-        code = e.code if isinstance(e, SystemExit) else e.exit_code
-        assert code == 0, "Module compilation failed"
+    res_build = runner.invoke(app, ["build"])
+    assert res_build.exit_code == 0, f"Module compilation failed: {res_build.stdout}"
 
     # 2. Run TLC
     # Verify that classes_dir is populated
     assert (classes_dir / "tlc2/overrides/TLCOverrides.class").exists()
 
     # Run TLC on "queue" spec
-    try:
-        run_tlc.tlc("queue")
-    except SystemExit as e:
-        # TLC returns 0 on success (no violations)
-        assert e.code == 0, "TLC run failed"
-    except typer.Exit as e:
-        assert e.exit_code == 0, "TLC run failed"
+    res_tlc = runner.invoke(app, ["tlc", "queue"])
+    assert res_tlc.exit_code == 0, f"TLC run failed: {res_tlc.stdout}"
 
     # 3. Verify output
     captured = capfd.readouterr()
-    stdout = captured.out
+    stdout = captured.out + res_tlc.stdout
 
     assert "Running TLC on queue.tla" in stdout
     # The output might vary but we expect some successes
@@ -96,11 +90,10 @@ def test_tlc_version_flag(mocker, capfd, base_settings):
     mock_result.stderr = ""
     mocker.patch("tla.run_tlc.subprocess.run", return_value=mock_result)
 
-    with pytest.raises(typer.Exit) as exc_info:
-        run_tlc.version_callback(True)
-
-    assert exc_info.value.exit_code == 0
+    result = runner.invoke(app, ["tlc", "--version"])
+    assert result.exit_code == 0
 
     captured = capfd.readouterr()
-    assert "tla2tools.jar path:" in captured.out
-    assert "TLC2 Version Mock" in captured.out
+    stdout = captured.out + result.stdout
+    assert "tla2tools.jar path:" in stdout
+    assert "TLC2 Version Mock" in stdout

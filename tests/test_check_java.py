@@ -1,9 +1,11 @@
 from unittest.mock import MagicMock
 
-import pytest
-import typer
+from typer.testing import CliRunner
 
 from tla import check_java
+from tla.cli import app
+
+runner = CliRunner()
 
 
 def test_parse_java_version():
@@ -33,27 +35,35 @@ def test_get_java_version_not_found(mocker):
     assert check_java.get_java_version() is None
 
 
-def test_check_java_version_ok(mocker):
+def test_check_java_version_ok(mocker, base_settings):
     """Test check passes when version is sufficient."""
     mocker.patch("tla.check_java.get_java_version", return_value="11.0.2")
-    # Should not raise
-    check_java.check_java_version(11)
-    check_java.check_java_version(8)
+    mocker.patch("tla.cli.load_config", return_value=base_settings)
+
+    base_settings.java.min_version = 11
+    result = runner.invoke(app, ["check-java"])
+    assert result.exit_code == 0
+
+    base_settings.java.min_version = 8
+    result = runner.invoke(app, ["check-java"])
+    assert result.exit_code == 0
 
 
-def test_check_java_version_too_low(mocker):
+def test_check_java_version_too_low(mocker, base_settings):
     """Test check fails when version is too low."""
     mocker.patch("tla.check_java.get_java_version", return_value="1.8.0_202")
+    mocker.patch("tla.cli.load_config", return_value=base_settings)
+    base_settings.java.min_version = 11
 
-    with pytest.raises(typer.Exit) as e:
-        check_java.check_java_version(11)
-    assert e.value.exit_code == 1
+    result = runner.invoke(app, ["check-java"])
+    assert result.exit_code == 1
 
 
-def test_check_java_version_missing(mocker):
+def test_check_java_version_missing(mocker, base_settings):
     """Test check fails when java is missing."""
     mocker.patch("tla.check_java.get_java_version", return_value=None)
+    mocker.patch("tla.cli.load_config", return_value=base_settings)
+    base_settings.java.min_version = 11
 
-    with pytest.raises(typer.Exit) as e:
-        check_java.check_java_version(11)
-    assert e.value.exit_code == 1
+    result = runner.invoke(app, ["check-java"])
+    assert result.exit_code == 1

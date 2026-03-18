@@ -1,8 +1,11 @@
 import shutil
 
 import pytest
+from typer.testing import CliRunner
 
-from tla import build_tlc_module
+from tla.cli import app
+
+runner = CliRunner()
 
 # Define paths relative to the test file
 # Check if javac is available
@@ -30,13 +33,8 @@ def test_build_integration(mocker, tmp_path, queue_dir, base_settings):
     mocker.patch("tla.build_tlc_module.workspace_root", return_value=queue_dir)
 
     # Run build
-    # We catch typer.Exit just in case, though it shouldn't be raised on success
-    try:
-        build_tlc_module.build(verbose=True)
-    except SystemExit as e:
-        # build() raises typer.Exit(1) on failure
-        # If it raises, we fail the test
-        assert e.code == 0, "Build failed with SystemExit"
+    result = runner.invoke(app, ["build", "--verbose"])
+    assert result.exit_code == 0, f"Build failed with {result.exit_code}: {result.stdout}"
 
     # Verify outputs
     assert classes_dir.exists(), "Classes directory not created"
@@ -71,10 +69,8 @@ def test_build_custom_overrides(mocker, tmp_path, queue_dir, base_settings):
     mocker.patch("tla.build_tlc_module.load_config", return_value=base_settings)
     mocker.patch("tla.build_tlc_module.workspace_root", return_value=queue_dir)
 
-    try:
-        build_tlc_module.build(verbose=False)
-    except SystemExit as e:
-        assert e.code == 0
+    result = runner.invoke(app, ["build"])
+    assert result.exit_code == 0, f"Build failed: {result.stdout}"
 
     service_file = classes_dir / "META-INF/services/tlc2.overrides.ITLCOverrides"
     assert service_file.exists()

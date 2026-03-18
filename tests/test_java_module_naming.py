@@ -2,9 +2,11 @@ import shutil
 from pathlib import Path
 
 import pytest
-import typer
+from typer.testing import CliRunner
 
-from tla import build_tlc_module, run_tlc
+from tla.cli import app
+
+runner = CliRunner()
 
 JAVA_AVAILABLE = shutil.which("java") is not None
 JAVAC_AVAILABLE = shutil.which("javac") is not None
@@ -47,14 +49,13 @@ def test_tlc_overrides_naming_works(tmp_path, mocker, base_settings, capfd, nami
     """
     setup_naming_env(tmp_path, mocker, base_settings, naming_fixed_dir)
 
-    try:
-        build_tlc_module.build(verbose=False)
-        run_tlc.tlc("test_spec")
-    except (SystemExit, typer.Exit) as e:
-        code = e.code if isinstance(e, SystemExit) else e.exit_code
-        assert code == 0, "TLC run failed"
+    res_build = runner.invoke(app, ["build"])
+    assert res_build.exit_code == 0, f"Module compilation failed: {res_build.stdout}"
 
-    stdout = capfd.readouterr().out
+    res_tlc = runner.invoke(app, ["tlc", "test_spec"])
+    assert res_tlc.exit_code == 0, f"TLC run failed: {res_tlc.stdout}"
+
+    stdout = capfd.readouterr().out + res_tlc.stdout
     assert "OVERRIDE_ACTIVE_TLCOverrides" in stdout, "TLCOverrides approach should work but failed!"
 
 
@@ -68,13 +69,13 @@ def test_module_name_class_naming_fails(tmp_path, mocker, base_settings, capfd, 
     """
     setup_naming_env(tmp_path, mocker, base_settings, naming_dynamic_dir)
 
-    try:
-        build_tlc_module.build(verbose=False)
-        run_tlc.tlc("test_spec")
-    except (SystemExit, typer.Exit):
-        pass
+    res_build = runner.invoke(app, ["build"])
+    assert res_build.exit_code == 0, f"Module compilation failed: {res_build.stdout}"
 
-    stdout = capfd.readouterr().out
+    res_tlc = runner.invoke(app, ["tlc", "test_spec"])
+    assert res_tlc.exit_code == 0, f"TLC run failed: {res_tlc.stdout}"
+
+    stdout = capfd.readouterr().out + res_tlc.stdout
 
     # If this assertion fails, it means TLC updated its underlying library to actually support
     # module-named classes! In that case, we should update our documentation and change this test.

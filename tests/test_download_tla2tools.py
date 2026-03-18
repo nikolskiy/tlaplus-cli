@@ -3,8 +3,11 @@ from unittest.mock import MagicMock
 import pytest
 import requests
 import typer
+from typer.testing import CliRunner
 
-from tla import download_tla2tools
+from tla.cli import app
+
+runner = CliRunner()
 
 
 @pytest.fixture
@@ -42,7 +45,7 @@ def mock_get_version(mocker):
     return mocker.patch("tla.download_tla2tools._get_version", return_value="2.19")
 
 
-def test_download_create(mock_config, mock_requests, mock_check_java, mock_get_version, capsys):
+def test_download_create(mock_config, mock_requests, mock_check_java, mock_get_version):
     """Test downloading when file does not exist."""
     _, cache_dir = mock_config
     jar_path = cache_dir / "tla2tools.jar"
@@ -54,18 +57,18 @@ def test_download_create(mock_config, mock_requests, mock_check_java, mock_get_v
     mock_response.headers = {}
     mock_requests.return_value = mock_response
 
-    download_tla2tools.tla(nightly=False)
+    result = runner.invoke(app, ["download"])
+    assert result.exit_code == 0
 
     assert jar_path.exists()
     assert jar_path.read_bytes() == b"chunk1chunk2"
     mock_requests.assert_called_once()
     assert mock_requests.call_args[0][0] == "http://stable.url"
 
-    captured = capsys.readouterr()
-    assert "Created" in captured.out
+    assert "Created" in result.stdout
 
 
-def test_download_update(mock_config, mock_requests, mock_check_java, mock_get_version, capsys):
+def test_download_update(mock_config, mock_requests, mock_check_java, mock_get_version):
     """Test updating when file exists and is modified."""
     _, cache_dir = mock_config
     jar_path = cache_dir / "tla2tools.jar"
@@ -78,7 +81,8 @@ def test_download_update(mock_config, mock_requests, mock_check_java, mock_get_v
     mock_response.headers = {}
     mock_requests.return_value = mock_response
 
-    download_tla2tools.tla(nightly=True)
+    result = runner.invoke(app, ["download", "--nightly"])
+    assert result.exit_code == 0
 
     assert jar_path.read_text() == "new content"
     mock_requests.assert_called_once()
@@ -87,11 +91,10 @@ def test_download_update(mock_config, mock_requests, mock_check_java, mock_get_v
     headers = mock_requests.call_args[1]["headers"]
     assert "If-Modified-Since" in headers
 
-    captured = capsys.readouterr()
-    assert "Updated" in captured.out
+    assert "Updated" in result.stdout
 
 
-def test_download_no_update(mock_config, mock_requests, mock_check_java, mock_get_version, capsys):
+def test_download_no_update(mock_config, mock_requests, mock_check_java, mock_get_version):
     """Test no update when server returns 304."""
     _, cache_dir = mock_config
     jar_path = cache_dir / "tla2tools.jar"
@@ -102,24 +105,23 @@ def test_download_no_update(mock_config, mock_requests, mock_check_java, mock_ge
     mock_response.status_code = 304
     mock_requests.return_value = mock_response
 
-    download_tla2tools.tla(nightly=False)
+    result = runner.invoke(app, ["download"])
+    assert result.exit_code == 0
 
     assert jar_path.read_text() == "content"
 
-    captured = capsys.readouterr()
-    assert "already at the latest version" in captured.out
+    assert "already at the latest version" in result.stdout
 
 
 def test_download_failure(mock_config, mock_requests, mock_check_java):
     """Test download failure raises Exit."""
     mock_requests.side_effect = requests.RequestException("Network error")
 
-    with pytest.raises(typer.Exit) as e:
-        download_tla2tools.tla(nightly=False)
-    assert e.value.exit_code == 1
+    result = runner.invoke(app, ["download"])
+    assert result.exit_code == 1
 
 
-def test_java_check_failure(mock_config, mock_requests, mock_check_java, capsys):
+def test_java_check_failure(mock_config, mock_requests, mock_check_java):
     """Test that failed java check aborts download and prints error."""
     # Mock check_java_version to raise Exit (simulating failure)
     # Note: check_java_version prints error messages itself before raising,
@@ -135,13 +137,11 @@ def test_java_check_failure(mock_config, mock_requests, mock_check_java, capsys)
 
     mock_check_java.side_effect = side_effect
 
-    with pytest.raises(typer.Exit) as e:
-        download_tla2tools.tla(nightly=False)
-    assert e.value.exit_code == 1
+    result = runner.invoke(app, ["download"])
+    assert result.exit_code == 1
 
     # Verify download was NOT called
     mock_requests.assert_not_called()
 
     # Verify error message
-    captured = capsys.readouterr()
-    assert "Error: Java version 11 or higher is required." in captured.err
+    assert "Error: Java version 11 or higher is required." in result.output
