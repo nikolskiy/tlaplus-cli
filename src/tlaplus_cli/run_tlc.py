@@ -7,17 +7,21 @@ import typer
 
 from tlaplus_cli.check_java import check_java_version
 from tlaplus_cli.config import cache_dir, load_config, workspace_root
+from tlaplus_cli.version_manager import get_pinned_version_dir
 
 
 def version_callback(value: bool) -> None:
     if value:
         config = load_config()
-        jar_path = cache_dir() / config.tla.jar_name
-        typer.echo(f"{config.tla.jar_name} path: {jar_path}")
+        pinned_dir = get_pinned_version_dir()
+        pinned_jar = pinned_dir / "tla2tools.jar" if pinned_dir else None
+        legacy = cache_dir() / "tla2tools.jar"
+        jar_path = pinned_jar if (pinned_jar and pinned_jar.exists()) else legacy
+        typer.echo(f"tla2tools.jar path: {jar_path}")
 
         if not jar_path.exists():
-            typer.echo(f"Error: {config.tla.jar_name} not found at {jar_path}", err=True)
-            typer.echo("Run 'tla download' first.", err=True)
+            typer.echo(f"Error: tla2tools.jar not found at {jar_path}", err=True)
+            typer.echo("Run 'tla tlc install' first.", err=True)
             raise typer.Exit(1)
 
         cmd = ["java", "-cp", str(jar_path), config.tlc.java_class]
@@ -49,14 +53,17 @@ def tlc(
         pass
     config = load_config()
 
-    # Check Java version before proceeding
     check_java_version(config.java.min_version)
 
-    # Jar lives in the cache directory
-    jar_path = cache_dir() / config.tla.jar_name
+    # Fallback chain: pinned version → legacy jar
+    pinned_dir = get_pinned_version_dir()
+    pinned_jar = pinned_dir / "tla2tools.jar" if pinned_dir else None
+    legacy = cache_dir() / "tla2tools.jar"
+    jar_path = pinned_jar if (pinned_jar and pinned_jar.exists()) else legacy
+
     if not jar_path.exists():
-        typer.echo(f"Error: {config.tla.jar_name} not found at {jar_path}", err=True)
-        typer.echo("Run 'tla download tla' first.", err=True)
+        typer.echo("Error: tla2tools.jar not found.", err=True)
+        typer.echo("Run 'tla tlc install' first.", err=True)
         raise typer.Exit(1)
 
     ws_root = workspace_root()

@@ -2,7 +2,8 @@
 
 This document outlines the step-by-step implementation plan for adding TLC version management capabilities to the `tlaplus-cli` project. It adopts a Test-Driven Development (TDD) approach where unit tests are written first.
 
-## Stage 1: Configuration & CLI Restructuring
+## Stage 1: Configuration & CLI Restructuring [X]
+**Completion Note:** Implemented config updates, CLI scaffolding, and dummy tests. Encountered an issue where tests expecting `tla tlc <spec>` failed because Typer doesn't support a command and a command-group with the same name (`tlc`). To fix this, part of Stage 4 (`tla run` refactor) was implemented early: the main model checking command was renamed to `tla run`, and integration tests were updated to use it instead of `tla tlc`.
 **Goal:** Update the config data models, remove deprecated commands, scaffold the new Typer command subgroups, and set up TDD test infrastructure.
 **Details:**
 - **Configuration**:
@@ -39,7 +40,8 @@ This document outlines the step-by-step implementation plan for adding TLC versi
     - `tla fetch-cache clear`: Asserts the cache file `~/.cache/tla/github_cache.json` is deleted.
 *(At the end of this stage, CLI tests checking arguments should start passing, but semantic tests will still fail).*
 
-## Stage 2: Core Version Manager API (GitHub & OS)
+## Stage 2: Core Version Manager API (GitHub & OS) [X]
+**Completion Note:** Implemented caching strategies and offline-fallback logic into `version_manager.py` with the addition of Enum-based FetchStatus types for accurate UI reporting.
 **Goal:** Implement the underlying Python modules (e.g., `tlaplus_cli/version_manager.py`) to interface with the GitHub API and manage local directories, including a caching layer.
 **Details:**
 - **GitHub API Handler**:
@@ -61,7 +63,8 @@ This document outlines the step-by-step implementation plan for adding TLC versi
   - `get_pinned_path()`: Evaluates the symlink at `get_tlc_dir() / "pinned"`.
   - `set_pin(version_dir)`: Helper function to create/overwrite the symbolic link.
 
-## Stage 3: Implementation of TLC Subcommands (Read-Only)
+## Stage 3: Implementation of TLC Subcommands (Read-Only) [X]
+**Completion Note:** Defined read-only Typer commands (`dir`, `list`, `find`, `fetch-cache clear`) incorporating dynamic `rich.table` output for `list`. Fixed a minor Ruff lint requirement by employing ternary operators.
 **Goal:** Fulfill the logic for commands that only observe state, plus unit tests for them.
 **Details:**
 - **`tla tlc dir`**: Output `get_tlc_dir()`.
@@ -76,7 +79,8 @@ This document outlines the step-by-step implementation plan for adding TLC versi
 - **`tla fetch-cache clear`**: Delete `~/.cache/tla/github_cache.json` and confirm to the user.
 *(At the end of this stage, tests assessing read-only subcommands will pass).*
 
-## Stage 4: `tla run` Refactor
+## Stage 4: `tla run` Refactor [X]
+**Completion Note:** Accomplished alias deprecation and runtime re-routing via `cli.py` and `tlc_manager.py`. Built fallback logic bridging new version definitions with old offline setups in `run_tlc.py`.
 **Goal:** Migrate the execution command and adapt it to use the new pinned version path, with a legacy fallback for backward compatibility.
 **Details:**
 - **Command Routing**:
@@ -96,7 +100,9 @@ This document outlines the step-by-step implementation plan for adding TLC versi
   - Add `tla run <spec>` tests asserting the classpath maps to `pinned/tla2tools.jar` when the pinned directory exists, and falls back to the legacy jar otherwise.
 *(At the end of this stage, the `tla run <spec>` tests should pass).*
 
-## Stage 5: Implementation of TLC Subcommands (Mutating)
+## Stage 5: Implementation of TLC Subcommands (Mutating) [X]
+**Completion Note:** Implemented install, pin, and uninstall commands. Note: When running `pytest` tests automatically, typer prompts (like `uninstall` confirmation) implicitly exit with `1` unless auto-mocked or provided with input. Added `input="y\n"` in `test_tlc_manager.py`.
+
 **Goal:** Implement commands that download assets and manipulate the disk.
 **Details:**
 - **`tla tlc install [<version>]`**:
@@ -111,7 +117,9 @@ This document outlines the step-by-step implementation plan for adding TLC versi
   - Implement `if version == "default":` to delete `~/.cache/tla/tla2tools.jar` (legacy cleanup).
 *(At the end of this stage, tests assessing mutating subcommands will pass).*
 
-## Stage 6: Implementation of TLC Upgrade
+## Stage 6: Implementation of TLC Upgrade [X]
+**Completion Note:** Formulated the complex logic of resolving old tags vs. new tags using cached API results, dropping down into the `install` task to seamlessly migrate and re-pin versions. The entire plan is now fully integrated.
+
 **Goal:** Address the nuanced upgrade logic.
 **Details:**
 - **`tla tlc upgrade [<version>]`**:

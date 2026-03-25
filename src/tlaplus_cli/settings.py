@@ -6,12 +6,12 @@ from pydantic import BaseModel, Field, model_validator
 
 
 class TlaUrls(BaseModel):
-    stable: str
-    nightly: str
+    tags: str
+    releases: str
+    per_page: int = 30
 
 
 class TlaConfig(BaseModel):
-    jar_name: str
     urls: TlaUrls
 
 

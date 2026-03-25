@@ -7,8 +7,8 @@ import typer
 from tlaplus_cli.build_tlc_module import build as build_tlc_cmd
 from tlaplus_cli.check_java import check_java_version, get_java_version
 from tlaplus_cli.config import load_config
-from tlaplus_cli.download_tla2tools import tla as download_tla_cmd
 from tlaplus_cli.run_tlc import tlc as run_tlc_cmd
+from tlaplus_cli.tlc_manager import fetch_cache_app, tlc_app
 
 app = typer.Typer(
     name="tla",
@@ -47,10 +47,11 @@ def root(
 
 # --- Subcommands ---
 
-# Register 'download' directly as a command, effectively 'tla download'
-app.command(name="download")(download_tla_cmd)
+# Attach typer subgroups for TLC and fetch-cache
+app.add_typer(tlc_app, name="tlc")
+app.add_typer(fetch_cache_app, name="fetch-cache")
 
-app.command(name="tlc")(run_tlc_cmd)
+app.command(name="run")(run_tlc_cmd)
 app.command(name="build")(build_tlc_cmd)
 
 

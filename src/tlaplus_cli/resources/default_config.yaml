@@ -1,8 +1,8 @@
 tla:
-  jar_name: tla2tools.jar
   urls:
-    stable: https://github.com/tlaplus/tlaplus/releases/latest/download/tla2tools.jar
-    nightly: https://tla.msr-inria.inria.fr/tlatoolbox/ci/dist/tla2tools.jar
+    tags: https://api.github.com/repos/tlaplus/tlaplus/tags
+    releases: https://api.github.com/repos/tlaplus/tlaplus/releases
+    per_page: 30
 
 # Path to the TLA+ workspace (specs, custom modules, compiled classes).
 # Relative paths are resolved from the current working directory.

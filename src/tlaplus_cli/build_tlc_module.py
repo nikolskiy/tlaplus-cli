@@ -5,6 +5,7 @@ import subprocess
 import typer
 
 from tlaplus_cli.config import cache_dir, load_config, workspace_root
+from tlaplus_cli.version_manager import get_pinned_version_dir
 
 
 def build(
@@ -13,16 +14,19 @@ def build(
     """Compile custom Java modules."""
     config = load_config()
 
-    # Jar lives in the cache directory
-    jar_path = cache_dir() / config.tla.jar_name
+    # Fallback chain: pinned directory -> legacy jar
+    pinned_dir = get_pinned_version_dir()
+    pinned_jar = pinned_dir / "tla2tools.jar" if pinned_dir else None
+    legacy = cache_dir() / "tla2tools.jar"
+    jar_path = pinned_jar if (pinned_jar and pinned_jar.exists()) else legacy
 
     ws_root = workspace_root()
     modules_dir = ws_root / config.workspace.modules_dir
     classes_dir = ws_root / config.workspace.classes_dir
 
     if not jar_path.exists():
-        typer.echo(f"Error: {config.tla.jar_name} not found at {jar_path}", err=True)
-        typer.echo("Run 'tla download tla' first.", err=True)
+        typer.echo("Error: tla2tools.jar not found.", err=True)
+        typer.echo("Run 'tla tlc install' first.", err=True)
         raise typer.Exit(1)
 
     if not modules_dir.exists():

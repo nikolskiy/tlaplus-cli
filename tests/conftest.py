@@ -40,7 +40,12 @@ def base_settings(tmp_path: Path) -> Settings:
     Can be modified by tests before patching.
     """
     return Settings(
-        tla={"jar_name": "tla2tools.jar", "urls": {"stable": "http://stable.url", "nightly": "http://nightly.url"}},
+        tla={
+            "urls": {
+                "tags": "https://api.github.com/repos/tlaplus/tlaplus/tags",
+                "releases": "https://api.github.com/repos/tlaplus/tlaplus/releases",
+            }
+        },
         tlc={"java_class": "tlc2.TLC"},
         # check_env_opts validator might run, simpler to provide explicit opts if needed,
         # or rely on default empty list if env var not set.

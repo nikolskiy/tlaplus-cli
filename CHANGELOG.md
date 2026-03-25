@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- Comprehensive TLC version management under the `tla tlc` command group.
+  - `list`: Show available remote versions and locally installed versions.
+  - `install`: Download specific or latest TLC versions directly from GitHub.
+  - `pin`: Set a default version to use across the workspace.
+  - `upgrade`: Update the pinned version to a newer commit.
+  - `find`: Get the absolute path to the local `tla2tools.jar`.
+  - `uninstall`: Remove local versions to free up space.
+- Added GitHub API caching with a 1-hour TTL to avoid rate limits (manageable via `tla fetch-cache clear`).
+- Added `--force` flag for re-downloading versions.
+- Added a visual progress bar for TLC jar downloads.
+
+### Changed
+- **Breaking Change**: The main execution command has been renamed from `tla tlc <spec>` to `tla run <spec>` to support the new `tlc` subcommand group.
+- Migrated legacy `tla2tools.jar` handling. The old `tla download` command has been removed.
+- Refactored `tlaUrls` in `config.yaml` to point to GitHub tags and releases endpoints directly.
+- Use a plain text marker (`tlc-pinned-version.txt`) for tracking the pinned TLC version to ensure cross-platform compatibility (avoiding Windows symlink requirements).
+
+### Fixed
+- Significantly expanded the test suite to use robust mock fixtures for GitHub API and filesystem side-effects.
+
+
 ## [0.1.8] - 2026-03-18
 
 ### Changed

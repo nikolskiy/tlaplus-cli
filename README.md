@@ -4,7 +4,7 @@ Command-line tool for working with TLA+ specifications and the TLC model checker
 
 ## Installation
 
-Install system-wide via uv tool
+Install system-wide via uv tool:
 
 ```bash
 uv tool install tlaplus-cli
@@ -15,23 +15,89 @@ Upgrade:
 uv tool upgrade tlaplus-cli
 ```
 
-Uninstall
-
+Uninstall:
 ```bash
 uv tool uninstall tlaplus-cli
 ```
 
 ## Usage
 
-### Download TLC
+### Managing TLC Versions
+
+The `tla tlc` command group allows you to download and manage multiple versions of the TLC model checker directly from GitHub releases. 
+
+List available and installed TLC versions:
+```bash
+tla tlc list
+```
+
+Install the latest TLC version:
+```bash
+tla tlc install
+```
+
+Install a specific TLC version:
+```bash
+tla tlc install v1.8.0
+```
+
+Pin a specific version to be used by default:
+```bash
+tla tlc pin v1.8.0
+```
+
+Upgrade the pinned version (or a specific version) to a newer commit:
+```bash
+tla tlc upgrade
+```
+
+Show the absolute path of a specific or pinned version's tla2tools.jar:
+```bash
+tla tlc find
+```
+```bash
+tla tlc find v1.8.0
+```
+
+Show the directory where TLC versions are stored:
+```bash
+tla tlc dir
+```
+
+Uninstall a specific version (or use 'default' to remove legacy jars):
+```bash
+tla tlc uninstall v1.8.0
+```
+
+### Run TLC
+
+Run the TLC model checker on a specification. This uses the currently pinned TLC version.
 
 ```bash
-# Download stable release
-tla download
-
-# Download nightly build
-tla download --nightly
+tla run <spec_name>
 ```
+
+For example (runs `queue.tla`):
+
+```bash
+tla run queue
+```
+
+> **Note:** Starting from version `0.2.0`, the command structure has changed. To run a model, use `tla run <spec>`. For older versions (<0.2.0), the command was `tla tlc <spec>`.
+
+### Compile Custom Java Modules
+
+Compile modules:
+```bash
+tla build
+```
+
+Verbose output:
+```bash
+tla build --verbose
+```
+
+Compiles `.java` files from `workspace/modules/` into `workspace/classes/`.
 
 ### Check Java Version
 
@@ -39,27 +105,12 @@ tla download --nightly
 tla check-java
 ```
 
-### Compile Custom Java Modules
+### Cache Management
+
+The CLI caches GitHub API responses for 1 hour to prevent rate limiting. To clear this cache manually:
 
 ```bash
-tla build
-
-# Verbose output
-tla build --verbose
-```
-
-Compiles `.java` files from `workspace/modules/` into `workspace/classes/`.
-
-### Run TLC
-
-```bash
-tla tlc <spec_name>
-```
-
-For example:
-
-```bash
-tla tlc queue
+tla fetch-cache clear
 ```
 
 ## Configuration
@@ -74,10 +125,9 @@ Edit this file to set your workspace path and TLC options:
 
 ```yaml
 tla:
-  jar_name: tla2tools.jar
   urls:
-    stable: https://github.com/tlaplus/tlaplus/releases/latest/download/tla2tools.jar
-    nightly: https://tla.msr-inria.inria.fr/tlatoolbox/ci/dist/tla2tools.jar
+    tags: https://api.github.com/repos/tlaplus/tlaplus/tags
+    releases: https://api.github.com/repos/tlaplus/tlaplus/releases
 
 workspace:
   root: .                 # Project root (relative to CWD)
@@ -101,7 +151,8 @@ java:
 | Directory | Purpose | Location |
 |---|---|---|
 | Config | `config.yaml` | `~/.config/tla/` |
-| Cache | `tla2tools.jar` | `~/.cache/tla/` |
+| TLC Versions | Version dirs & `tlc-pinned-version.txt` file | `~/.cache/tla/tlc/` |
+| API Cache | `github_cache.json` | `~/.cache/tla/` |
 | Workspace | specs + modules + classes | Set via `workspace.root` in config |
 
 ## Note on Package Name

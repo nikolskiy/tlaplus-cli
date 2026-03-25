@@ -57,7 +57,7 @@ def test_run_tlc_integration(mocker, tmp_path, capfd, queue_dir, base_settings):
     assert (classes_dir / "tlc2/overrides/TLCOverrides.class").exists()
 
     # Run TLC on "queue" spec
-    res_tlc = runner.invoke(app, ["tlc", "queue"])
+    res_tlc = runner.invoke(app, ["run", "queue"])
     assert res_tlc.exit_code == 0, f"TLC run failed: {res_tlc.stdout}"
 
     # 3. Verify output
@@ -72,25 +72,22 @@ def test_run_tlc_integration(mocker, tmp_path, capfd, queue_dir, base_settings):
     assert "State log test:" in stdout
 
 
-def test_tlc_version_flag(mocker, capfd, base_settings):
-    """Test that 'tla tlc --version' prints the jar path and version."""
+def test_tlc_version_flag(mocker, capfd, base_settings, tmp_path):
+    """Test that 'tla run --version' prints the jar path and version."""
     mocker.patch("tlaplus_cli.run_tlc.load_config", return_value=base_settings)
 
-    # We patch cache_dir to return a mock Path
-    mock_jar_path = mocker.MagicMock()
-    mock_jar_path.exists.return_value = True
-    mock_jar_path.__str__.return_value = "/mock/path/tla2tools.jar"
-
-    mock_cache_dir = mocker.MagicMock()
-    mock_cache_dir.__truediv__.return_value = mock_jar_path
-    mocker.patch("tlaplus_cli.run_tlc.cache_dir", return_value=mock_cache_dir)
+    # Create a fake pinned version dir with a jar
+    pinned_dir = tmp_path / "tlc" / "v1.8.0-abcdef1"
+    pinned_dir.mkdir(parents=True)
+    (pinned_dir / "tla2tools.jar").write_bytes(b"fake jar")
+    mocker.patch("tlaplus_cli.run_tlc.get_pinned_version_dir", return_value=pinned_dir)
 
     mock_result = mocker.MagicMock()
     mock_result.stdout = "TLC2 Version Mock\\nSome other output"
     mock_result.stderr = ""
     mocker.patch("tlaplus_cli.run_tlc.subprocess.run", return_value=mock_result)
 
-    result = runner.invoke(app, ["tlc", "--version"])
+    result = runner.invoke(app, ["run", "--version"])
     assert result.exit_code == 0
 
     captured = capfd.readouterr()
