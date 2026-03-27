@@ -55,6 +55,7 @@ Show the absolute path of a specific or pinned version's tla2tools.jar:
 ```bash
 tla tlc find
 ```
+Show the absolute path to a specific version's tla2tools.jar:
 ```bash
 tla tlc find v1.8.0
 ```
@@ -86,6 +87,8 @@ tla run queue
 > **Note:** Starting from version `0.2.0`, the command structure has changed. To run a model, use `tla run <spec>`. For older versions (<0.2.0), the command was `tla tlc <spec>`.
 
 ### Compile Custom Java Modules
+
+Note that modules are compiled using the pinned version of TLC.
 
 Compile modules:
 ```bash
