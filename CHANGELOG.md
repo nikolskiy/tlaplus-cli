@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   - `upgrade`: Update the pinned version to a newer commit.
   - `find`: Get the absolute path to the local `tla2tools.jar`.
   - `uninstall`: Remove local versions to free up space.
+  - `meta sync`: Backfill or rebuild `meta-tla2tools.json` metadata profiles for existing local installations.
+- Robust local TLC version profile generator saving metadata like parsed dates and `java -cp` output headers via `meta-tla2tools.json`.
 - Added GitHub API caching with a 1-hour TTL to avoid rate limits (manageable via `tla fetch-cache clear`).
 - Added `--force` flag for re-downloading versions.
 - Added a visual progress bar for TLC jar downloads.
