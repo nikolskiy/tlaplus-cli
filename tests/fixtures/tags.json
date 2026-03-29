@@ -1,0 +1,22 @@
+[
+  {
+    "name": "v1.8.0",
+    "zipball_url": "https://api.github.com/repos/owner/repo/zipball/refs/tags/v1.8.0",
+    "tarball_url": "https://api.github.com/repos/owner/repo/tarball/refs/tags/v1.8.0",
+    "commit": {
+      "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "url": "https://api.github.com/repos/owner/repo/commits/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "node_id": "node_tag_0"
+  },
+  {
+    "name": "v1.7.4",
+    "zipball_url": "https://api.github.com/repos/owner/repo/zipball/refs/tags/v1.7.4",
+    "tarball_url": "https://api.github.com/repos/owner/repo/tarball/refs/tags/v1.7.4",
+    "commit": {
+      "sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "url": "https://api.github.com/repos/owner/repo/commits/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    },
+    "node_id": "node_tag_1"
+  }
+]

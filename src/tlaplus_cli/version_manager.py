@@ -1,5 +1,6 @@
 import json
 import shutil
+import subprocess
 import time
 from dataclasses import asdict, dataclass
 from enum import Enum
@@ -19,6 +20,8 @@ class RemoteVersion:
     short_sha: str
     full_sha: str
     jar_download_url: str
+    published_at: str
+    prerelease: bool
 
 
 @dataclass
@@ -101,6 +104,39 @@ def list_local_versions() -> list[LocalVersion]:
     return result
 
 
+def write_version_metadata(version_dir: Path, target: RemoteVersion) -> None:
+    """Write the meta-tla2tools.json file for a downloaded version."""
+    tlc2_version_string = ""
+    try:
+        result = subprocess.run(
+            ["java", "-cp", "tla2tools.jar", "tlc2.TLC", "-version"],
+            cwd=version_dir,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if result.stdout:
+            tlc2_version_string = result.stdout.strip().split("\n")[0]
+    except Exception as e:
+        typer.echo(f"⚠ Warning: Failed to extract TLC version string: {e}", err=True)
+
+    meta_file = version_dir / "meta-tla2tools.json"
+    metadata = {
+        "tag_name": target.name,
+        "sha": target.full_sha,
+        "published_at": target.published_at,
+        "tlc2_version_string": tlc2_version_string,
+        "prerelease": target.prerelease,
+        "download_url": target.jar_download_url,
+    }
+
+    try:
+        with meta_file.open("w") as f:
+            json.dump(metadata, f, indent=2)
+    except Exception as e:
+        typer.echo(f"⚠ Warning: Failed to write metadata: {e}", err=True)
+
+
 def clear_cache() -> None:
     cache_file = get_github_cache_file()
     if cache_file.exists():
@@ -145,6 +181,8 @@ def download_version(target: RemoteVersion, *, force: bool = False) -> Path:
     except Exception:
         shutil.rmtree(version_dir, ignore_errors=True)
         raise
+
+    write_version_metadata(version_dir, target)
 
     return version_dir
 
@@ -207,6 +245,8 @@ def _process_remote_versions(
                         short_sha=full_sha[:7],
                         full_sha=full_sha,
                         jar_download_url=jar_url,
+                        published_at=cast_str(release.get("published_at")),
+                        prerelease=bool(release.get("prerelease")),
                     )
                 )
     return versions

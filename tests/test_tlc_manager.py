@@ -9,8 +9,8 @@ from tlaplus_cli.cli import app
 runner = CliRunner()
 
 MOCK_TAGS = [
-    {"name": "v1.8.0", "commit": {"sha": "abcdef1234567890abcdef1234567890abcdef12"}},
-    {"name": "v1.7.0", "commit": {"sha": "1234567890abcdef1234567890abcdef12345678"}},
+    {"name": "v1.8.0", "commit": {"sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}},
+    {"name": "v1.7.0", "commit": {"sha": "bbbbbbb890aaaaaaa234567890aaaaaaa2345678"}},
 ]
 
 MOCK_RELEASES = [
@@ -76,7 +76,7 @@ def installed_v180(mock_cache):
     """Create a pre-installed v1.8.0 version directory."""
     tlc_dir = mock_cache / "tlc"
     tlc_dir.mkdir(parents=True, exist_ok=True)
-    version_dir = tlc_dir / "v1.8.0-abcdef1"
+    version_dir = tlc_dir / "v1.8.0-aaaaaaa"
     version_dir.mkdir()
     (version_dir / "tla2tools.jar").write_bytes(b"fake jar")
     return version_dir
@@ -127,7 +127,7 @@ def test_tlc_install_selects_latest(mock_github_api, mock_download, mock_load_co
 def test_tlc_install_already_installed(mock_github_api, mock_download, mock_load_config, installed_v180, mock_cache):
     # Pin so auto-pin doesn't trigger
     pin_file = mock_cache / "tlc" / "tlc-pinned-version.txt"
-    pin_file.write_text("v1.8.0-abcdef1")
+    pin_file.write_text("v1.8.0-aaaaaaa")
     result = runner.invoke(app, ["tlc", "install", "v1.8.0"])
     assert result.exit_code == 0
     assert "already installed" in result.stdout
@@ -135,7 +135,7 @@ def test_tlc_install_already_installed(mock_github_api, mock_download, mock_load
 
 def test_tlc_install_force(mock_github_api, mock_download, mock_load_config, installed_v180, mock_cache):
     pin_file = mock_cache / "tlc" / "tlc-pinned-version.txt"
-    pin_file.write_text("v1.8.0-abcdef1")
+    pin_file.write_text("v1.8.0-aaaaaaa")
     result = runner.invoke(app, ["tlc", "install", "v1.8.0", "--force"])
     assert result.exit_code == 0
     assert "already installed" not in result.stdout
@@ -148,7 +148,7 @@ def test_tlc_install_auto_pins_first(mock_github_api, mock_download, mock_load_c
     assert "Auto-pinning" in result.stdout
     pin_file = mock_cache / "tlc" / "tlc-pinned-version.txt"
     assert pin_file.exists()
-    assert pin_file.read_text().strip() == "v1.8.0-abcdef1"
+    assert pin_file.read_text().strip() == "v1.8.0-aaaaaaa"
 
 
 # --- upgrade ---
@@ -158,23 +158,23 @@ def test_tlc_upgrade(mock_github_api, mock_download, mock_load_config, mock_cach
     # Install an old version with different sha
     tlc_dir = mock_cache / "tlc"
     tlc_dir.mkdir(parents=True, exist_ok=True)
-    old_dir = tlc_dir / "v1.8.0-oldsha1"
+    old_dir = tlc_dir / "v1.8.0-ccccccc"
     old_dir.mkdir()
     (old_dir / "tla2tools.jar").write_bytes(b"old jar")
     # Pin it
-    (tlc_dir / "tlc-pinned-version.txt").write_text("v1.8.0-oldsha1")
+    (tlc_dir / "tlc-pinned-version.txt").write_text("v1.8.0-ccccccc")
 
     result = runner.invoke(app, ["tlc", "upgrade"])
     assert result.exit_code == 0
     assert not old_dir.exists()
-    new_dir = tlc_dir / "v1.8.0-abcdef1"
+    new_dir = tlc_dir / "v1.8.0-aaaaaaa"
     assert new_dir.exists()
-    assert (tlc_dir / "tlc-pinned-version.txt").read_text().strip() == "v1.8.0-abcdef1"
+    assert (tlc_dir / "tlc-pinned-version.txt").read_text().strip() == "v1.8.0-aaaaaaa"
 
 
 def test_tlc_upgrade_already_up_to_date(mock_github_api, mock_cache, mock_load_config, installed_v180):
     pin_file = mock_cache / "tlc" / "tlc-pinned-version.txt"
-    pin_file.write_text("v1.8.0-abcdef1")
+    pin_file.write_text("v1.8.0-aaaaaaa")
     result = runner.invoke(app, ["tlc", "upgrade"])
     assert result.exit_code == 0
     assert "already up to date" in result.stdout
@@ -185,7 +185,7 @@ def test_tlc_upgrade_already_up_to_date(mock_github_api, mock_cache, mock_load_c
 
 def test_tlc_find_pinned(mock_load_config, mock_cache, installed_v180):
     pin_file = mock_cache / "tlc" / "tlc-pinned-version.txt"
-    pin_file.write_text("v1.8.0-abcdef1")
+    pin_file.write_text("v1.8.0-aaaaaaa")
     result = runner.invoke(app, ["tlc", "find"])
     assert result.exit_code == 0
     assert "tla2tools.jar" in result.stdout
@@ -211,13 +211,13 @@ def test_tlc_pin(mock_load_config, mock_cache, installed_v180):
     assert result.exit_code == 0
     pin_file = mock_cache / "tlc" / "tlc-pinned-version.txt"
     assert pin_file.exists()
-    assert "v1.8.0-abcdef1" in pin_file.read_text()
+    assert "v1.8.0-aaaaaaa" in pin_file.read_text()
 
 
 def test_tlc_pin_not_found(mock_load_config, mock_cache):
     tlc_dir = mock_cache / "tlc"
     tlc_dir.mkdir(parents=True, exist_ok=True)
-    (tlc_dir / "v1.7.0-1234567").mkdir()
+    (tlc_dir / "v1.7.0-bbbbbbb").mkdir()
     result = runner.invoke(app, ["tlc", "pin", "v9.9.9"])
     assert result.exit_code == 1
 
@@ -242,7 +242,7 @@ def test_tlc_uninstall(mock_load_config, mock_cache, installed_v180):
 
 def test_tlc_uninstall_pinned_warns(mock_load_config, mock_cache, installed_v180):
     pin_file = mock_cache / "tlc" / "tlc-pinned-version.txt"
-    pin_file.write_text("v1.8.0-abcdef1")
+    pin_file.write_text("v1.8.0-aaaaaaa")
     result = runner.invoke(app, ["tlc", "uninstall", "v1.8.0"], input="y\n")
     assert result.exit_code == 0
     assert "pinned" in result.stdout.lower()
@@ -267,3 +267,17 @@ def test_fetch_cache_clear(mock_load_config, mock_cache):
     result = runner.invoke(app, ["fetch-cache", "clear"])
     assert result.exit_code == 0
     assert not cache_file.exists()
+
+
+# --- meta ---
+
+
+def test_tlc_meta_sync(mock_github_api, mock_cache, mock_load_config, installed_v180, mocker):
+    mock_write = mocker.patch("tlaplus_cli.tlc_manager.write_version_metadata")
+    result = runner.invoke(app, ["tlc", "meta", "sync"])
+    assert result.exit_code == 0
+    assert "Synced metadata for v1.8.0-aaaaaaa" in result.stdout
+    mock_write.assert_called_once()
+    args, _ = mock_write.call_args
+    assert args[0] == installed_v180
+    assert args[1].name == "v1.8.0"
