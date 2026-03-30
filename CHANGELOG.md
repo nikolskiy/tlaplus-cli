@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-## [0.2.0] - 2026-03-30
+## [0.2.1] - 2026-03-30
 
 ### Added
 - Comprehensive TLC version management under the `tla tlc` command group.
