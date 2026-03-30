@@ -1,3 +1,4 @@
+import json
 import shutil
 from unittest.mock import MagicMock
 
@@ -180,27 +181,71 @@ def test_tlc_upgrade_already_up_to_date(mock_github_api, mock_cache, mock_load_c
     assert "already up to date" in result.stdout
 
 
-# --- find ---
+# --- path (renamed from find) ---
 
 
-def test_tlc_find_pinned(mock_load_config, mock_cache, installed_v180):
+def test_tlc_path_pinned_with_metadata(mock_load_config, mock_cache, installed_v180):
+    """path shows TLC2 version string from metadata then the jar path."""
     pin_file = mock_cache / "tlc" / "tlc-pinned-version.txt"
     pin_file.write_text("v1.8.0-aaaaaaa")
-    result = runner.invoke(app, ["tlc", "find"])
+    # Write metadata
+
+    meta = {"tlc2_version_string": "TLC2 Version 2.19 of 08 August 2024 (rev: 5a47802)"}
+    (installed_v180 / "meta-tla2tools.json").write_text(json.dumps(meta))
+
+    result = runner.invoke(app, ["tlc", "path"])
     assert result.exit_code == 0
-    assert "tla2tools.jar" in result.stdout
+    lines = result.stdout.strip().splitlines()
+    assert lines[0] == "TLC2 Version 2.19 of 08 August 2024 (rev: 5a47802)"
+    assert "tla2tools.jar" in lines[1]
 
 
-def test_tlc_find_version(mock_load_config, mock_cache, installed_v180):
-    result = runner.invoke(app, ["tlc", "find", "v1.8.0"])
+def test_tlc_path_pinned_without_metadata(mock_load_config, mock_cache, installed_v180):
+    """path still works when no metadata exists — just shows the jar path."""
+    pin_file = mock_cache / "tlc" / "tlc-pinned-version.txt"
+    pin_file.write_text("v1.8.0-aaaaaaa")
+
+    result = runner.invoke(app, ["tlc", "path"])
     assert result.exit_code == 0
-    assert "tla2tools.jar" in result.stdout
+    lines = result.stdout.strip().splitlines()
+    assert len(lines) == 1
+    assert "tla2tools.jar" in lines[0]
 
 
-def test_tlc_find_not_found(mock_load_config, mock_cache):
+def test_tlc_path_version_with_metadata(mock_load_config, mock_cache, installed_v180):
+    """path <version> shows metadata + jar path for a specific installed version."""
+
+    meta = {"tlc2_version_string": "TLC2 Version 2.19 of 08 August 2024 (rev: 5a47802)"}
+    (installed_v180 / "meta-tla2tools.json").write_text(json.dumps(meta))
+
+    result = runner.invoke(app, ["tlc", "path", "v1.8.0"])
+    assert result.exit_code == 0
+    lines = result.stdout.strip().splitlines()
+    assert lines[0] == "TLC2 Version 2.19 of 08 August 2024 (rev: 5a47802)"
+    assert "tla2tools.jar" in lines[1]
+
+
+def test_tlc_path_version_without_metadata(mock_load_config, mock_cache, installed_v180):
+    """path <version> works without metadata — just shows jar path."""
+    result = runner.invoke(app, ["tlc", "path", "v1.8.0"])
+    assert result.exit_code == 0
+    lines = result.stdout.strip().splitlines()
+    assert len(lines) == 1
+    assert "tla2tools.jar" in lines[0]
+
+
+def test_tlc_path_not_found(mock_load_config, mock_cache):
     (mock_cache / "tlc").mkdir(parents=True, exist_ok=True)
-    result = runner.invoke(app, ["tlc", "find", "v9.9.9"])
+    result = runner.invoke(app, ["tlc", "path", "v9.9.9"])
     assert result.exit_code == 1
+
+
+def test_tlc_path_no_pinned(mock_load_config, mock_cache):
+    """path without args fails if nothing is pinned."""
+    (mock_cache / "tlc").mkdir(parents=True, exist_ok=True)
+    result = runner.invoke(app, ["tlc", "path"])
+    assert result.exit_code == 1
+    assert "No pinned version" in result.output
 
 
 # --- pin ---
@@ -229,6 +274,33 @@ def test_tlc_dir(mock_load_config, mock_cache):
     result = runner.invoke(app, ["tlc", "dir"])
     assert result.exit_code == 0
     assert str(mock_cache / "tlc") in result.stdout
+
+
+def test_tlc_dir_shows_installed_versions(mock_load_config, mock_cache, installed_v180):
+    """dir lists installed version directories under the TLC cache."""
+    # Add another version
+    tlc_dir = mock_cache / "tlc"
+    v170_dir = tlc_dir / "v1.7.0-bbbbbbb"
+    v170_dir.mkdir(parents=True, exist_ok=True)
+
+    result = runner.invoke(app, ["tlc", "dir"])
+    assert result.exit_code == 0
+    lines = result.stdout.strip().splitlines()
+    assert str(tlc_dir) in lines[0]
+    # Entries should be indented and sorted
+    assert "  v1.7.0-bbbbbbb" in lines[1]
+    assert "  v1.8.0-aaaaaaa" in lines[2]
+
+
+def test_tlc_dir_empty(mock_load_config, mock_cache):
+    """dir shows just the path when no versions are installed."""
+    tlc_dir = mock_cache / "tlc"
+    tlc_dir.mkdir(parents=True, exist_ok=True)
+    result = runner.invoke(app, ["tlc", "dir"])
+    assert result.exit_code == 0
+    lines = result.stdout.strip().splitlines()
+    assert len(lines) == 1
+    assert str(tlc_dir) in lines[0]
 
 
 # --- uninstall ---

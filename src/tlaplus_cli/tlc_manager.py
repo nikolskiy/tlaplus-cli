@@ -1,4 +1,5 @@
 import shutil
+from pathlib import Path
 
 import typer
 from rich.console import Console
@@ -14,6 +15,7 @@ from tlaplus_cli.version_manager import (
     get_pinned_version_dir,
     get_tlc_dir,
     list_local_versions,
+    read_version_metadata,
     set_pin,
     write_version_metadata,
 )
@@ -169,23 +171,34 @@ def upgrade(version: str = typer.Argument(None)) -> None:
 
 
 @tlc_app.command()
-def find(version: str = typer.Argument(None)) -> None:
+def path(version: str = typer.Argument(None)) -> None:
+    """Show the path to tla2tools.jar for the pinned or specified version."""
     if not version:
         pinned_dir = get_pinned_version_dir()
         if pinned_dir:
             jar = pinned_dir / "tla2tools.jar"
             if jar.exists():
-                typer.echo(str(jar))
+                _print_version_path(pinned_dir, jar)
                 return
         typer.echo("Error: No pinned version found.", err=True)
         raise typer.Exit(1)
 
     for lv in list_local_versions():
         if lv.name == version:
-            typer.echo(str(lv.path / "tla2tools.jar"))
+            jar = lv.path / "tla2tools.jar"
+            _print_version_path(lv.path, jar)
             return
     typer.echo(f"Error: Version {version} not found locally.", err=True)
     raise typer.Exit(1)
+
+
+
+def _print_version_path(version_dir: Path, jar_path: Path) -> None:
+    """Print the TLC2 version string (if available) and jar path."""
+    meta = read_version_metadata(version_dir)
+    if meta and meta.get("tlc2_version_string"):
+        typer.echo(meta["tlc2_version_string"])
+    typer.echo(str(jar_path))
 
 
 @tlc_app.command()
@@ -223,7 +236,16 @@ def pin(version: str = typer.Argument(None)) -> None:
 
 @tlc_app.command(name="dir")
 def show_dir() -> None:
-    typer.echo(str(get_tlc_dir()))
+    """Show the TLC versions directory and its contents."""
+    tlc_dir = get_tlc_dir()
+    typer.echo(str(tlc_dir))
+    if tlc_dir.exists():
+        entries = sorted(
+            d.name for d in tlc_dir.iterdir()
+            if d.is_dir() and not d.is_symlink()
+        )
+        for entry in entries:
+            typer.echo(f"  {entry}")
 
 
 @tlc_app.command()

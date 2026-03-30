@@ -12,7 +12,7 @@
     - `download_url`: The `browser_download_url` for the jar from the `releases` endpoint.
 - **Metadata Resync Command:** Create a `tla tlc meta sync` command that iterates over all locally installed versions and regenerates their `meta-tla2tools.json` files. This is necessary to easily backfill metadata if future updates require capturing additional information.
 
-### Group 2: Command Renaming and Output Enhancements (`find` -> `path`, `dir`)
+### [x] Group 2: Command Renaming and Output Enhancements (`find` -> `path`, `dir`)
 *Development Approach: Use TDD. Write unit tests utilizing mock setups to verify standard CLI output logic against internal metadata caches.*
 - **Rename "find":** Rename "find" to "path". The name "find" is confusing because it implies searching for any version, a functionality that isn't present.
 - **`path` Output Modification:** The new `path` command should show the path to the jar alongside the synthesized TLC2 version string from our internal `meta-tla2tools.json` cache metadata (captured initially during download). Example:

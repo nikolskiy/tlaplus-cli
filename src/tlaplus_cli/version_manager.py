@@ -137,6 +137,22 @@ def write_version_metadata(version_dir: Path, target: RemoteVersion) -> None:
         typer.echo(f"⚠ Warning: Failed to write metadata: {e}", err=True)
 
 
+def read_version_metadata(version_dir: Path) -> dict[str, Any] | None:
+    """Read the meta-tla2tools.json file for a version directory.
+
+    Returns the metadata dict or None if the file doesn't exist or can't be read.
+    """
+    meta_file = version_dir / "meta-tla2tools.json"
+    if not meta_file.exists():
+        return None
+    try:
+        with meta_file.open("r") as f:
+            data: dict[str, Any] = json.load(f)
+            return data
+    except Exception:
+        return None
+
+
 def clear_cache() -> None:
     cache_file = get_github_cache_file()
     if cache_file.exists():

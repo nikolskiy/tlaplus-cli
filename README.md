@@ -51,18 +51,32 @@ Upgrade the pinned version (or a specific version) to a newer commit:
 tla tlc upgrade
 ```
 
-Show the absolute path of a specific or pinned version's tla2tools.jar:
+Show the TLC2 version string and absolute path to the pinned version's `tla2tools.jar`:
 ```bash
-tla tlc find
-```
-Show the absolute path to a specific version's tla2tools.jar:
-```bash
-tla tlc find v1.8.0
+tla tlc path
 ```
 
-Show the directory where TLC versions are stored:
+Or for a specific version:
+```bash
+tla tlc path v1.8.0
+```
+
+Example output:
+```text
+TLC2 Version 2.19 of 08 August 2024 (rev: 5a47802)
+/home/bob/.cache/tla/tlc/v1.8.0-5a47802/tla2tools.jar
+```
+
+Show the TLC versions directory and all installed version directories:
 ```bash
 tla tlc dir
+```
+
+Example output:
+```text
+/home/bob/.cache/tla/tlc
+  v1.7.0-abc1234
+  v1.8.0-5a47802
 ```
 
 Uninstall a specific version (or use 'default' to remove legacy jars):

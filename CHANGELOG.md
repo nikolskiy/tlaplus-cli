@@ -13,7 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   - `install`: Download specific or latest TLC versions directly from GitHub.
   - `pin`: Set a default version to use across the workspace.
   - `upgrade`: Update the pinned version to a newer commit.
-  - `find`: Get the absolute path to the local `tla2tools.jar`.
+  - `path`: Get the absolute path to the local `tla2tools.jar` for the pinned or a specific version. Displays the TLC2 version string from cached metadata above the path when available.
+  - `dir`: Show the TLC versions directory and list all installed version directories.
   - `uninstall`: Remove local versions to free up space.
   - `meta sync`: Backfill or rebuild `meta-tla2tools.json` metadata profiles for existing local installations.
 - Robust local TLC version profile generator saving metadata like parsed dates and `java -cp` output headers via `meta-tla2tools.json`.
