@@ -12,6 +12,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   - **Auto-pinning**: The first TLC version installed is now automatically pinned.
   - **Pin stability**: Subsequent installations of other versions will no longer "hijack" the current pin.
   - **Smart Fallback**: Uninstalling the pinned version now automatically re-pins the "latest" remaining version based on semantic versioning, release date, or directory age.
+- `uninstall`: Added `--all` flag to remove all tags for a specific version name.
+- `uninstall`: Added interactive selection when multiple tags exist for the same version name.
+- `upgrade`: Now seamlessly installs the target version if it is not already present locally.
+
+### Changed
+- `list`: Enhanced table display with a "Published" column and a green checkmark `✓` for the pinned version.
+- `list`: Improved version resolution to show separate entries for different SHAs of the same version name, removing the confusing "upgrade" status.
+- `upgrade`: Now defaults to upgrading the currently pinned version if no version argument is provided.
+- `upgrade`: Automatically updates the pin to the new directory if the version being upgraded was currently pinned.
+- `pin` & `uninstall`: Matching versions are now sorted by directory name for consistent interactive selection.
 
 ## [0.2.1] - 2026-03-30
 

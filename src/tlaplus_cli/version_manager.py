@@ -7,8 +7,7 @@ import subprocess
 import time
 from dataclasses import asdict, dataclass
 from enum import Enum
-from pathlib import Path
-from typing import Any, Sequence
+from typing import TYPE_CHECKING, Any
 
 import requests
 import typer
@@ -16,6 +15,9 @@ from rich.progress import BarColumn, DownloadColumn, Progress, TransferSpeedColu
 
 from tlaplus_cli.config import cache_dir
 
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+    from pathlib import Path
 
 _SEMVER_RE = re.compile(r"^v?(\d+)\.(\d+)\.(\d+)")
 
@@ -28,7 +30,7 @@ def _parse_semver(name: str) -> tuple[int, int, int] | None:
     return None
 
 
-def _version_sort_key(lv: "LocalVersion") -> tuple[int, tuple[int, int, int], str, float]:
+def _version_sort_key(lv: LocalVersion) -> tuple[int, tuple[int, int, int], str, float]:
     """
     Build a sort key for determining the "latest" installed version.
 
@@ -55,7 +57,7 @@ def _version_sort_key(lv: "LocalVersion") -> tuple[int, tuple[int, int, int], st
     return (has_semver, semver_tuple, published_at, mtime)
 
 
-def resolve_latest_version(versions: Sequence["LocalVersion"]) -> "LocalVersion" | None:
+def resolve_latest_version(versions: Sequence[LocalVersion]) -> LocalVersion | None:
     """Return the 'latest' version from a list, or None if empty.
 
     Ordering priority:

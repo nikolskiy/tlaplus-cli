@@ -54,6 +54,9 @@ Upgrade the pinned version (or a specific version) to a newer commit:
 tla tlc upgrade
 ```
 
+> [!NOTE]
+> If the target version to upgrade is not yet installed locally, the CLI will automatically download it.
+
 Show the TLC2 version string and absolute path to the pinned version's `tla2tools.jar`:
 ```bash
 tla tlc path
@@ -86,6 +89,9 @@ Uninstall a specific version (or use 'default' to remove legacy jars):
 ```bash
 tla tlc uninstall v1.8.0
 ```
+
+> [!TIP]
+> Use `--all` to remove all installed tags for a specific version name without interactive prompts.
 
 > [!NOTE]
 > If you uninstall the currently pinned version, the CLI will automatically "fall back" to the next best installed version (ranked by semver, then release date).

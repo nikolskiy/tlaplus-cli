@@ -8,6 +8,7 @@ from rich.table import Table
 from tlaplus_cli.config import cache_dir, load_config
 from tlaplus_cli.version_manager import (
     FetchStatus,
+    LocalVersion,
     clear_cache,
     clear_pin,
     download_version,
@@ -36,7 +37,9 @@ def list_versions() -> None:
     pinned_dir = get_pinned_version_dir()
     pinned_dir_name = pinned_dir.name if pinned_dir else None
 
-    local_parsed = {lv.name: lv for lv in local_versions}
+    # Track what we've displayed to handle local-only and duplicates
+    # key: (name, short_sha)
+    displayed: set[tuple[str, str]] = set()
 
     title = "TLC Versions"
     if status == FetchStatus.STALE:
@@ -47,31 +50,46 @@ def list_versions() -> None:
     table = Table(title=title)
     table.add_column("Version", style="cyan")
     table.add_column("Tag/SHA", style="magenta")
+    table.add_column("Published", style="blue")
     table.add_column("Status", style="green")
-    table.add_column("Pinned", style="yellow")
+    table.add_column("Pinned", style="yellow", justify="center")
+
+    def format_date(date_str: str) -> str:
+        if not date_str:
+            return ""
+        return date_str.split("T", maxsplit=1)[0]
 
     if status == FetchStatus.UNAVAILABLE:
         for lv in local_versions:
-            is_pinned = "Yes" if pinned_dir_name == f"{lv.name}-{lv.short_sha}" else ""
-            table.add_row(lv.name, lv.short_sha, "installed", is_pinned)
+            dir_name = f"{lv.name}-{lv.short_sha}"
+            is_pinned = "[green]✓[/green]" if pinned_dir_name == dir_name else ""
+            meta = read_version_metadata(lv.path)
+            published = format_date(meta.get("published_at", "")) if meta else ""
+            table.add_row(lv.name, lv.short_sha, published, "installed", is_pinned)
     else:
-        remote_names: set[str] = set()
+        remote_names = {v.name for v in versions}
+        # First, remote versions
         for v in versions:
-            remote_names.add(v.name)
-            is_pinned = "Yes" if pinned_dir_name == f"{v.name}-{v.short_sha}" else ""
+            dir_name = f"{v.name}-{v.short_sha}"
+            is_pinned = "[green]✓[/green]" if pinned_dir_name == dir_name else ""
 
-            row_status = "available"
-            if v.name in local_parsed:
-                lv = local_parsed[v.name]
-                row_status = "installed" if lv.short_sha == v.short_sha else "upgrade"
+            # Check if this exact version (name+sha) is installed
+            installed = any(lv.name == v.name and lv.short_sha == v.short_sha for lv in local_versions)
+            row_status = "installed" if installed else "available"
 
-            table.add_row(v.name, v.short_sha, row_status, is_pinned)
+            table.add_row(v.name, v.short_sha, format_date(v.published_at), row_status, is_pinned)
+            displayed.add((v.name, v.short_sha))
 
-        # Show locally installed versions not in remote list
+        # Then, local versions not in remote (or with different SHAs)
         for lv in local_versions:
-            if lv.name not in remote_names:
-                is_pinned = "Yes" if pinned_dir_name == f"{lv.name}-{lv.short_sha}" else ""
-                table.add_row(lv.name, lv.short_sha, "local only", is_pinned)
+            if (lv.name, lv.short_sha) not in displayed:
+                dir_name = f"{lv.name}-{lv.short_sha}"
+                is_pinned = "[green]✓[/green]" if pinned_dir_name == dir_name else ""
+                meta = read_version_metadata(lv.path)
+                published = format_date(meta.get("published_at", "")) if meta else ""
+
+                row_status = "installed" if lv.name in remote_names else "local only"
+                table.add_row(lv.name, lv.short_sha, published, row_status, is_pinned)
 
     console = Console()
     console.print(table)
@@ -116,26 +134,30 @@ def install(
         set_pin(version_dir)
 
 
+def _resolve_upgrade_target(version: str | None, pinned_dir: Path | None) -> tuple[str, Path | None]:
+    if version:
+        local_versions = list_local_versions()
+        matching = [lv for lv in local_versions if lv.name == version]
+        if not matching:
+            typer.echo(f"Version {version} not found locally. Installing instead.")
+            return version, None
+        return version, matching[0].path
+
+    if not pinned_dir:
+        typer.echo("Error: No pinned version to upgrade and no version specified.", err=True)
+        raise typer.Exit(1)
+
+    parts = pinned_dir.name.rsplit("-", 1)
+    target_name = parts[0] if len(parts) == 2 else pinned_dir.name
+    return target_name, pinned_dir
+
+
 @tlc_app.command()
 def upgrade(version: str = typer.Argument(None)) -> None:
     pinned_dir = get_pinned_version_dir()
     pinned_dir_name = pinned_dir.name if pinned_dir else None
 
-    if version:
-        local_versions = list_local_versions()
-        matching = [lv for lv in local_versions if lv.name == version]
-        if not matching:
-            typer.echo(f"Error: Version {version} not found locally.", err=True)
-            raise typer.Exit(1)
-        target_name = version
-        old_dir = matching[0].path
-    else:
-        if not pinned_dir:
-            typer.echo("Error: No pinned version to upgrade and no version specified.", err=True)
-            raise typer.Exit(1)
-        parts = pinned_dir.name.rsplit("-", 1)
-        target_name = parts[0] if len(parts) == 2 else pinned_dir.name
-        old_dir = pinned_dir
+    target_name, old_dir = _resolve_upgrade_target(version, pinned_dir)
 
     config = load_config()
     versions, _ = fetch_remote_versions(config.tla.urls.tags, config.tla.urls.releases, config.tla.urls.per_page)
@@ -148,13 +170,16 @@ def upgrade(version: str = typer.Argument(None)) -> None:
         typer.echo(f"Error: Version {target_name} not found in remote repository.", err=True)
         raise typer.Exit(1)
 
-    if old_dir.name == f"{remote_target.name}-{remote_target.short_sha}":
+    if old_dir and old_dir.name == f"{remote_target.name}-{remote_target.short_sha}":
         typer.echo(f"Version {target_name} is already up to date ({remote_target.short_sha}).")
         return
 
-    typer.echo(f"Upgrading {target_name} to {remote_target.short_sha}...")
+    if old_dir:
+        typer.echo(f"Upgrading {target_name} to {remote_target.short_sha}...")
+    else:
+        typer.echo(f"Installing {target_name} ({remote_target.short_sha})...")
 
-    was_pinned = pinned_dir_name == old_dir.name
+    was_pinned = old_dir and pinned_dir_name == old_dir.name
 
     try:
         new_dir = download_version(remote_target)
@@ -163,10 +188,11 @@ def upgrade(version: str = typer.Argument(None)) -> None:
         typer.echo(f"Error: Failed to download: {e}", err=True)
         raise typer.Exit(1) from e
 
-    shutil.rmtree(old_dir, ignore_errors=True)
-    typer.echo(f"Removed old version directory {old_dir.name}")
+    if old_dir and old_dir.exists() and old_dir != new_dir:
+        shutil.rmtree(old_dir, ignore_errors=True)
+        typer.echo(f"Removed old version directory {old_dir.name}")
 
-    if was_pinned:
+    if was_pinned or not pinned_dir:
         set_pin(new_dir)
         typer.echo(f"Updated pin to {new_dir.name}")
 
@@ -193,7 +219,6 @@ def path(version: str = typer.Argument(None)) -> None:
     raise typer.Exit(1)
 
 
-
 def _print_version_path(version_dir: Path, jar_path: Path) -> None:
     """Print the TLC2 version string (if available) and jar path."""
     meta = read_version_metadata(version_dir)
@@ -218,6 +243,8 @@ def pin(version: str = typer.Argument(None)) -> None:
         typer.echo(f"Error: Version {version} not found locally.", err=True)
         raise typer.Exit(1)
 
+    matching.sort(key=lambda x: x.path.name)
+
     if len(matching) > 1:
         typer.echo("Multiple versions match:")
         for i, lv in enumerate(matching):
@@ -241,16 +268,39 @@ def show_dir() -> None:
     tlc_dir = get_tlc_dir()
     typer.echo(str(tlc_dir))
     if tlc_dir.exists():
-        entries = sorted(
-            d.name for d in tlc_dir.iterdir()
-            if d.is_dir() and not d.is_symlink()
-        )
+        entries = sorted(d.name for d in tlc_dir.iterdir() if d.is_dir() and not d.is_symlink())
         for entry in entries:
             typer.echo(f"  {entry}")
 
 
+def _resolve_uninstall_targets(version: str, all_tags: bool) -> list[LocalVersion]:
+    local_versions = list_local_versions()
+    matching = [lv for lv in local_versions if lv.name == version]
+
+    if not matching:
+        typer.echo(f"Error: Version {version} not found locally.", err=True)
+        raise typer.Exit(1)
+
+    matching.sort(key=lambda x: x.path.name)
+
+    if len(matching) > 1 and not all_tags:
+        typer.echo("Multiple versions match:")
+        for i, lv in enumerate(matching):
+            typer.echo(f"[{i}] {lv.path.name}")
+        choice = typer.prompt("Select version to uninstall", type=int)
+        if 0 <= choice < len(matching):
+            return [matching[choice]]
+        typer.echo("Invalid choice.", err=True)
+        raise typer.Exit(1)
+
+    return matching
+
+
 @tlc_app.command()
-def uninstall(version: str = typer.Argument(None)) -> None:
+def uninstall(
+    version: str = typer.Argument(None),
+    all: bool = typer.Option(False, "--all", help="Remove all matching versions."),
+) -> None:
     if not version:
         typer.echo("Error: Please provide a version to uninstall, or 'default' to remove legacy jar.", err=True)
         raise typer.Exit(1)
@@ -264,18 +314,13 @@ def uninstall(version: str = typer.Argument(None)) -> None:
             typer.echo("No legacy tla2tools.jar found.")
         return
 
-    local_versions = list_local_versions()
-    matching = [lv for lv in local_versions if lv.name == version]
-
-    if not matching:
-        typer.echo(f"Error: Version {version} not found locally.", err=True)
-        raise typer.Exit(1)
+    targets = _resolve_uninstall_targets(version, all)
 
     pinned_dir = get_pinned_version_dir()
     pinned_dir_name = pinned_dir.name if pinned_dir else None
     uninstalled_pinned = False
 
-    for lv in matching:
+    for lv in targets:
         if pinned_dir_name and pinned_dir_name == lv.path.name:
             confirm = typer.confirm(
                 f"Version {lv.path.name} is currently pinned. Uninstalling it will break `tla run`. Continue?"

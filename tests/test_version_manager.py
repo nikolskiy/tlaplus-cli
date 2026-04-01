@@ -1,5 +1,5 @@
-import os
 import json
+import os
 import time
 from pathlib import Path
 
@@ -15,7 +15,7 @@ from tlaplus_cli.version_manager import (
 class TestResolveLatestVersion:
     """Tests for the version-fallback ordering logic."""
 
-    def test_returns_none_when_no_versions(self, tmp_path):
+    def test_returns_none_when_no_versions(self):
         """No directories -> no latest version."""
         assert resolve_latest_version([]) is None
 

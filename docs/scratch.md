@@ -22,7 +22,7 @@
     ```
 - **`dir` Output Modification:** `tla tlc dir` should show the path to the directory as well as its contents (the list of installed version directories).
 
-### Group 3: Pin State Management & Auto-Pinning
+### [x] Group 3: Pin State Management & Auto-Pinning
 *Core state logic that ensures the pinned version is always valid.*
 *Development Approach: Use TDD. Write explicit tests for auto-pin interactions and verify the fallback logic through simulated `meta-tla2tools.json` dates and filesystem timestamps.*
 - **Auto-pinning on Install:** When a version is installed and no version is currently pinned, it should automatically be used as the pinned version. There should not be a state where versions are installed but no version is pinned.

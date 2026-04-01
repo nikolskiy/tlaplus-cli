@@ -152,9 +152,7 @@ def test_tlc_install_auto_pins_first(mock_github_api, mock_download, mock_load_c
     assert pin_file.read_text().strip() == "v1.8.0-aaaaaaa"
 
 
-def test_install_second_version_does_not_move_pin(
-    mock_github_api, mock_download, mock_load_config, mock_cache
-):
+def test_install_second_version_does_not_move_pin(mock_github_api, mock_download, mock_load_config, mock_cache):
     """Installing v1.7.0 after v1.8.0 is pinned must keep pin on v1.8.0."""
     # Install v1.8.0 first — auto-pins
     result = runner.invoke(app, ["tlc", "install", "v1.8.0"])
@@ -171,9 +169,7 @@ def test_install_second_version_does_not_move_pin(
     assert pin_file.read_text().strip() == "v1.8.0-aaaaaaa"
 
 
-def test_install_force_does_not_move_pin(
-    mock_github_api, mock_download, mock_load_config, mock_cache
-):
+def test_install_force_does_not_move_pin(mock_github_api, mock_download, mock_load_config, mock_cache):
     """Force-reinstalling a non-pinned version must not hijack the pin."""
     # Install and auto-pin v1.8.0
     runner.invoke(app, ["tlc", "install", "v1.8.0"])
@@ -187,9 +183,7 @@ def test_install_force_does_not_move_pin(
     assert pin_file.read_text().strip() == "v1.8.0-aaaaaaa"
 
 
-def test_uninstall_pinned_falls_back_to_latest(
-    mock_load_config, mock_cache
-):
+def test_uninstall_pinned_falls_back_to_latest(mock_load_config, mock_cache):
     """Uninstalling the pinned version re-pins to the latest remaining."""
     tlc_dir = mock_cache / "tlc"
     tlc_dir.mkdir(parents=True, exist_ok=True)
@@ -216,9 +210,7 @@ def test_uninstall_pinned_falls_back_to_latest(
     assert pin_file.read_text().strip() == "v1.8.0-aaaaaaa"
 
 
-def test_uninstall_pinned_last_version_clears_pin(
-    mock_load_config, mock_cache
-):
+def test_uninstall_pinned_last_version_clears_pin(mock_load_config, mock_cache):
     """Uninstalling the only installed version removes the pin entirely."""
     tlc_dir = mock_cache / "tlc"
     tlc_dir.mkdir(parents=True, exist_ok=True)
@@ -236,9 +228,7 @@ def test_uninstall_pinned_last_version_clears_pin(
     assert not pin_file.exists()
 
 
-def test_uninstall_non_pinned_keeps_pin(
-    mock_load_config, mock_cache
-):
+def test_uninstall_non_pinned_keeps_pin(mock_load_config, mock_cache):
     """Uninstalling a version that is NOT pinned leaves the pin unchanged."""
     tlc_dir = mock_cache / "tlc"
     tlc_dir.mkdir(parents=True, exist_ok=True)
@@ -262,9 +252,7 @@ def test_uninstall_non_pinned_keeps_pin(
     assert pin_file.read_text().strip() == "v1.8.0-aaaaaaa"
 
 
-def test_uninstall_pinned_fallback_uses_metadata_date(
-    mock_load_config, mock_cache
-):
+def test_uninstall_pinned_fallback_uses_metadata_date(mock_load_config, mock_cache):
     """Fallback prefers the version with a later published_at when semver is equal."""
     tlc_dir = mock_cache / "tlc"
     tlc_dir.mkdir(parents=True, exist_ok=True)
@@ -295,9 +283,7 @@ def test_uninstall_pinned_fallback_uses_metadata_date(
     assert pin_file.read_text().strip() == "v1.8.0-bbbbbbb"
 
 
-def test_pin_lifecycle_install_install_uninstall(
-    mock_github_api, mock_download, mock_load_config, mock_cache
-):
+def test_pin_lifecycle_install_install_uninstall(mock_github_api, mock_download, mock_load_config, mock_cache):
     """Full lifecycle: install -> auto-pin -> install second -> pin stable -> uninstall pinned -> fallback."""
     pin_file = mock_cache / "tlc" / "tlc-pinned-version.txt"
 
@@ -322,9 +308,7 @@ def test_pin_lifecycle_install_install_uninstall(
     assert not pin_file.exists()
 
 
-def test_install_auto_pins_when_pin_file_missing(
-    mock_github_api, mock_download, mock_load_config, mock_cache
-):
+def test_install_auto_pins_when_pin_file_missing(mock_github_api, mock_download, mock_load_config, mock_cache):
     """First-ever install creates the pin file automatically."""
     pin_file = mock_cache / "tlc" / "tlc-pinned-version.txt"
     assert not pin_file.exists()
@@ -335,9 +319,7 @@ def test_install_auto_pins_when_pin_file_missing(
     assert pin_file.read_text().strip() == "v1.7.0-bbbbbbb"
 
 
-def test_install_auto_pins_when_pin_file_empty(
-    mock_github_api, mock_download, mock_load_config, mock_cache
-):
+def test_install_auto_pins_when_pin_file_empty(mock_github_api, mock_download, mock_load_config, mock_cache):
     """An empty (corrupted) pin file is treated as 'no pin'."""
     tlc_dir = mock_cache / "tlc"
     tlc_dir.mkdir(parents=True, exist_ok=True)
@@ -348,9 +330,7 @@ def test_install_auto_pins_when_pin_file_empty(
     assert "Auto-pinning" in result.stdout
 
 
-def test_install_auto_pins_when_pinned_dir_deleted(
-    mock_github_api, mock_download, mock_load_config, mock_cache
-):
+def test_install_auto_pins_when_pinned_dir_deleted(mock_github_api, mock_download, mock_load_config, mock_cache):
     """Pin file references a directory that no longer exists -> treated as unpinned."""
     tlc_dir = mock_cache / "tlc"
     tlc_dir.mkdir(parents=True, exist_ok=True)
@@ -562,3 +542,90 @@ def test_tlc_meta_sync(mock_github_api, mock_cache, mock_load_config, installed_
     args, _ = mock_write.call_args
     assert args[0] == installed_v180
     assert args[1].name == "v1.8.0"
+
+
+def test_tlc_list_enhanced(mock_github_api, mock_cache, mock_load_config):
+    tlc_dir = mock_cache / "tlc"
+    tlc_dir.mkdir(parents=True, exist_ok=True)
+
+    # Local version v1.8.0 with DIFFERENT SHA
+    v180_local = tlc_dir / "v1.8.0-ccccccc"
+    v180_local.mkdir()
+    (v180_local / "meta-tla2tools.json").write_text(json.dumps({"published_at": "2023-12-31T00:00:00Z"}))
+
+    # Pin v1.8.0-ccccccc
+    (tlc_dir / "tlc-pinned-version.txt").write_text("v1.8.0-ccccccc")
+
+    result = runner.invoke(app, ["tlc", "list"])
+    assert result.exit_code == 0
+
+    # Check for "Published" column header
+    assert "Published" in result.stdout
+
+    # Check that "upgrade" status is GONE
+    assert "upgrade" not in result.stdout
+
+    # Check for two entries for v1.8.0
+    assert "aaaaaaa" in result.stdout
+    assert "ccccccc" in result.stdout
+    assert "available" in result.stdout
+    assert "installed" in result.stdout
+
+    # Check for green checkmark
+    assert "✓" in result.stdout
+
+
+def test_upgrade_missing_local_version_triggers_install(mock_github_api, mock_cache, mock_load_config, mocker):
+    tlc_dir = mock_cache / "tlc"
+    tlc_dir.mkdir(parents=True, exist_ok=True)
+
+    # Mock download_version
+    def side_effect(target, **kwargs):
+        new_dir = tlc_dir / f"{target.name}-{target.short_sha}"
+        new_dir.mkdir(parents=True, exist_ok=True)
+        (new_dir / "tla2tools.jar").write_text("new jar")
+        return new_dir
+
+    mocker.patch("tlaplus_cli.tlc_manager.download_version", side_effect=side_effect)
+
+    # v1.8.0 is NOT installed locally
+    result = runner.invoke(app, ["tlc", "upgrade", "v1.8.0"])
+    assert result.exit_code == 0
+    assert "not found locally. Installing instead." in result.stdout
+    assert (tlc_dir / "v1.8.0-aaaaaaa").exists()
+
+
+def test_uninstall_interactive_choice(mock_cache, mocker):
+    tlc_dir = mock_cache / "tlc"
+    tlc_dir.mkdir(parents=True, exist_ok=True)
+
+    # Install two tags of v1.8.0
+    v1 = tlc_dir / "v1.8.0-aaaaaaa"
+    v1.mkdir()
+    v2 = tlc_dir / "v1.8.0-bbbbbbb"
+    v2.mkdir()
+
+    # Mock typer.prompt to select choice 1 (v1.8.0-bbbbbbb)
+    mocker.patch("typer.prompt", return_value=1)
+
+    result = runner.invoke(app, ["tlc", "uninstall", "v1.8.0"])
+    assert result.exit_code == 0
+    assert "Multiple versions match" in result.stdout
+    assert not v2.exists()
+    assert v1.exists()
+
+
+def test_uninstall_all_flag(mock_cache):
+    tlc_dir = mock_cache / "tlc"
+    tlc_dir.mkdir(parents=True, exist_ok=True)
+
+    # Install two tags of v1.8.0
+    v1 = tlc_dir / "v1.8.0-aaaaaaa"
+    v1.mkdir()
+    v2 = tlc_dir / "v1.8.0-bbbbbbb"
+    v2.mkdir()
+
+    result = runner.invoke(app, ["tlc", "uninstall", "v1.8.0", "--all"])
+    assert result.exit_code == 0
+    assert not v1.exists()
+    assert not v2.exists()
