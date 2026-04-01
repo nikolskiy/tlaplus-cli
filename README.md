@@ -36,6 +36,9 @@ Install the latest TLC version:
 tla tlc install
 ```
 
+> [!TIP]
+> The first version you install is automatically "pinned" as the default. Subsequent installs won't change your pin unless you manually use `tla tlc pin`.
+
 Install a specific TLC version:
 ```bash
 tla tlc install v1.8.0
@@ -83,6 +86,9 @@ Uninstall a specific version (or use 'default' to remove legacy jars):
 ```bash
 tla tlc uninstall v1.8.0
 ```
+
+> [!NOTE]
+> If you uninstall the currently pinned version, the CLI will automatically "fall back" to the next best installed version (ranked by semver, then release date).
 
 ### Run TLC
 

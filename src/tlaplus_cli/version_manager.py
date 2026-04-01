@@ -1,17 +1,71 @@
+from __future__ import annotations
+
 import json
+import re
 import shutil
 import subprocess
 import time
 from dataclasses import asdict, dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Any
+from typing import Any, Sequence
 
 import requests
 import typer
 from rich.progress import BarColumn, DownloadColumn, Progress, TransferSpeedColumn
 
 from tlaplus_cli.config import cache_dir
+
+
+_SEMVER_RE = re.compile(r"^v?(\d+)\.(\d+)\.(\d+)")
+
+
+def _parse_semver(name: str) -> tuple[int, int, int] | None:
+    """Try to extract (major, minor, patch) from a version name like 'v1.8.0'."""
+    m = _SEMVER_RE.match(name)
+    if m:
+        return int(m.group(1)), int(m.group(2)), int(m.group(3))
+    return None
+
+
+def _version_sort_key(lv: "LocalVersion") -> tuple[int, tuple[int, int, int], str, float]:
+    """
+    Build a sort key for determining the "latest" installed version.
+
+    Tuple structure (all compared descending):
+      0: has_semver  — 1 if parseable, 0 otherwise (semver > non-semver)
+      1: semver      — (major, minor, patch) tuple
+      2: published_at — ISO-8601 string from metadata (lexicographic comparison works)
+      3: mtime       — directory last-modified timestamp
+    """
+    semver = _parse_semver(lv.name)
+    has_semver = 1 if semver else 0
+    semver_tuple = semver if semver else (0, 0, 0)
+
+    published_at = ""
+    meta = read_version_metadata(lv.path)
+    if meta and meta.get("published_at"):
+        published_at = meta["published_at"]
+
+    try:
+        mtime = lv.path.stat().st_mtime
+    except OSError:
+        mtime = 0.0
+
+    return (has_semver, semver_tuple, published_at, mtime)
+
+
+def resolve_latest_version(versions: Sequence["LocalVersion"]) -> "LocalVersion" | None:
+    """Return the 'latest' version from a list, or None if empty.
+
+    Ordering priority:
+      1. Highest semantic version wins.
+      2. For equal/unparseable semver: latest published_at from meta-tla2tools.json.
+      3. For missing metadata: latest directory mtime.
+    """
+    if not versions:
+        return None
+    return max(versions, key=_version_sort_key)
 
 
 @dataclass

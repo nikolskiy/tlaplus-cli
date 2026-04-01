@@ -16,6 +16,7 @@ from tlaplus_cli.version_manager import (
     get_tlc_dir,
     list_local_versions,
     read_version_metadata,
+    resolve_latest_version,
     set_pin,
     write_version_metadata,
 )
@@ -272,6 +273,7 @@ def uninstall(version: str = typer.Argument(None)) -> None:
 
     pinned_dir = get_pinned_version_dir()
     pinned_dir_name = pinned_dir.name if pinned_dir else None
+    uninstalled_pinned = False
 
     for lv in matching:
         if pinned_dir_name and pinned_dir_name == lv.path.name:
@@ -282,10 +284,20 @@ def uninstall(version: str = typer.Argument(None)) -> None:
                 typer.echo("Aborted.")
                 continue
             clear_pin()
+            uninstalled_pinned = True
             typer.echo(f"Unpinned {lv.path.name}.")
 
         shutil.rmtree(lv.path)
         typer.echo(f"Uninstalled {lv.path.name}.")
+
+    if uninstalled_pinned:
+        remaining = list_local_versions()
+        latest = resolve_latest_version(remaining)
+        if latest:
+            set_pin(latest.path)
+            typer.echo(f"Pin fell back to {latest.path.name}")
+        else:
+            typer.echo("No versions remaining, pin removed.")
 
 
 @fetch_cache_app.command(name="clear")

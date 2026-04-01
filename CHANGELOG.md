@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- Intelligent pin state management:
+  - **Auto-pinning**: The first TLC version installed is now automatically pinned.
+  - **Pin stability**: Subsequent installations of other versions will no longer "hijack" the current pin.
+  - **Smart Fallback**: Uninstalling the pinned version now automatically re-pins the "latest" remaining version based on semantic versioning, release date, or directory age.
+
 ## [0.2.1] - 2026-03-30
 
 ### Added
