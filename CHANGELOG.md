@@ -5,10 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.3.0] - 2026-04-03
 
 ### Added
+- **System CA Support**: Integrated `truststore` to automatically utilize the native OS certificate store for network requests. This resolves SSL verification failures in environments with custom CAs (e.g., corporate proxies).
 - **Breaking Change**: Renamed the `run` command to `tlc` to better reflect its function, since the previous `tlc` command group was renamed to `tools`.
+
   - To run the model checker, use `tla tlc <spec>` instead of `tla run <spec>`.
 - **Breaking Change**: Renamed the `tlc` subcommand group to `tools` to better reflect that it manages the entire TLA+ toolset distribution (TLC, SANY, TLATeX).
   - `tla tlc <action>` is now `tla tools <action>`.
