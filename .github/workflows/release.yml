@@ -34,7 +34,7 @@ jobs:
               run: uv sync --all-extras --dev
 
             - name: Install tla2tools.jar
-              run: uv run tla tlc install
+              run: uv run tla tools install
 
             - name: Run linting
               run: uv run poe lint
