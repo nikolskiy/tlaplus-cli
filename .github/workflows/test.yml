@@ -37,7 +37,7 @@ jobs:
 
       # Running tests requires a TLC
       - name: Download tla2tools.jar
-        run: uv run tla tlc install
+        run: uv run tla tools install
 
       - name: Run tests
         run: uv run poe test
