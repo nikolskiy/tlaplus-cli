@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-04-03
+
 ### Added
 - `tla tlc` now intelligently resolves `<spec>` files:
   - Supports running without the `.tla` extension.
