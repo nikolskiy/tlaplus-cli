@@ -52,7 +52,7 @@ def test_tlc_overrides_naming_works(tmp_path, mocker, base_settings, capfd, nami
     res_build = runner.invoke(app, ["build"])
     assert res_build.exit_code == 0, f"Module compilation failed: {res_build.stdout}"
 
-    res_tlc = runner.invoke(app, ["run", "test_spec"])
+    res_tlc = runner.invoke(app, ["tlc", "test_spec"])
     assert res_tlc.exit_code == 0, f"TLC run failed: {res_tlc.stdout}"
 
     stdout = capfd.readouterr().out + res_tlc.stdout
@@ -72,7 +72,7 @@ def test_module_name_class_naming_fails(tmp_path, mocker, base_settings, capfd, 
     res_build = runner.invoke(app, ["build"])
     assert res_build.exit_code == 0, f"Module compilation failed: {res_build.stdout}"
 
-    res_tlc = runner.invoke(app, ["run", "test_spec"])
+    res_tlc = runner.invoke(app, ["tlc", "test_spec"])
     assert res_tlc.exit_code == 0, f"TLC run failed: {res_tlc.stdout}"
 
     stdout = capfd.readouterr().out + res_tlc.stdout

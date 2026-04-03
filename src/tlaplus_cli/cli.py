@@ -51,7 +51,7 @@ def root(
 app.add_typer(tools_app, name="tools")
 app.add_typer(fetch_cache_app, name="fetch-cache")
 
-app.command(name="run")(run_tlc_cmd)
+app.command(name="tlc")(run_tlc_cmd)
 app.command(name="build")(build_tlc_cmd)
 
 

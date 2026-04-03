@@ -204,7 +204,7 @@ java -cp classes;lib\tla2tools.jar tlc2.TLC spec\queue.tla
 ### Using `tlaplus-cli`
 
 ```bash
-tla run queue
+tla tlc queue
 ```
 
 The CLI automatically constructs the correct classpath using your cached `tla2tools.jar` and your compiled `classes/` directory, and runs `tlc2.TLC` with appropriate Java garbage collection options.
@@ -245,7 +245,7 @@ pw.flush();
 pw.close();
 ```
 
-The file path is relative to TLC's working directory (the spec directory when using `tla run`).
+The file path is relative to TLC's working directory (the spec directory when using `tla tlc`).
 
 ---
 

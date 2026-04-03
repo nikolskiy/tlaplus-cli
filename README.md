@@ -101,16 +101,16 @@ tla tools uninstall v1.8.0
 Run the TLC model checker on a specification. This uses the currently pinned toolset version.
 
 ```bash
-tla run <spec_name>
+tla tlc <spec_name>
 ```
 
 For example (runs `queue.tla`):
 
 ```bash
-tla run queue
+tla tlc queue
 ```
 
-> **Note:** Starting from version `0.2.0`, the command structure has changed. To run a model, use `tla run <spec>`. For versions < 0.2.0, the command was `tla tlc <spec>`. Since 0.3.0, management commands are under `tla tools`.
+> **Note:** Starting from version `0.3.0`, the command structure has changed. To run a model, use `tla tlc <spec>`. For version `0.2.x`, the command was `tla run <spec>`. Since `0.3.0`, management commands are under `tla tools`.
 
 ### Compile Custom Java Modules
 

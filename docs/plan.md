@@ -1,33 +1,32 @@
-# Implementation Plan
+# Implementation Plan: Rename `tla run` to `tla tlc`
 
-## Rename `tlc` command group to `tools`
+## Objective
+Replace the `run` command with `tlc` so that users run the model checker via `tla tlc <spec>` instead of `tla run <spec>`. This clarifies the purpose of the command because `tla2tools` supports other tools alongside TLC.
 
-**Goal:** The `tla2tools.jar` acts as a multi-tool container that includes TLC, SANY (parser), and TLATeX. Renaming the subcommand from `tlc` to `tools` clarifies that these commands manage the entire toolset distribution rather than solely the TLC model checker.
+## 1. Update CLI Entrypoint
+- In `src/tlaplus_cli/cli.py`, change the command registration from `app.command(name="run")(run_tlc_cmd)` to `app.command(name="tlc")(run_tlc_cmd)`.
 
-### 1. Renaming the Subcommand App (`cli.py`, `tlc_manager.py` -> `tools_manager.py`)
-- Rename the file `src/tlaplus_cli/tlc_manager.py` to `src/tlaplus_cli/tools_manager.py`.
-- In `tools_manager.py`, rename the Typer instance from `tlc_app` to `tools_app`.
-- In `tools_manager.py`, update all decorators from `@tlc_app.command()` to `@tools_app.command()`.
-- In `src/tlaplus_cli/cli.py`, update the import to point to `tools_manager`. Change the typer group mapping from `app.add_typer(tlc_app, name="tlc")` to `app.add_typer(tools_app, name="tools")`.
+## 2. Update Internal Code References
+- In `src/tlaplus_cli/tools_manager.py`, update strings referring to `tla run` such as: "will break `tla run`" -> "will break `tla tlc`".
 
-### 2. Update Internal State and Directory Names (`version_manager.py`)
-Since the tool manipulates the `tla2tools.jar` (which contains multiple tools, not just TLC), we should generalize its caching directories:
-- Rename the cache folder from `cache_dir() / "tlc"` to `cache_dir() / "tools"`.
-- Rename the function `get_tlc_dir()` to `get_tools_dir()`.
-- Rename the pinning file from `tlc-pinned-version.txt` to `tools-pinned-version.txt`.
-- Add legacy migration logic in `_migrate_legacy_pin` to safely handle moving an existing `~/.cache/tlaplus-cli/tlc` to `~/.cache/tlaplus-cli/tools` if one exists, ensuring users don't have to re-download jars they already installed.
+## 3. Update Tests
+- In `tests/test_run_tlc.py`, update test cases to invoke `tlc` instead of `run`:
+  - Change `runner.invoke(app, ["run", "queue"])` to `runner.invoke(app, ["tlc", "queue"])`
+  - Change `runner.invoke(app, ["run", "--version"])` to `runner.invoke(app, ["tlc", "--version"])`
+- Update the docstrings in the test file reflecting `tla run`.
 
-### 3. Update Tests
-- Rename the test file `tests/test_tlc_manager.py` to `tests/test_tools_manager.py`.
-- In `tests/test_tools_manager.py`, replace all CLI `runner.invoke(app, ["tlc", ...])` calls with `runner.invoke(app, ["tools", ...])`.
-- Update all occurrences of the mocked paths in the tests from `tmp_path / "tlc"` to `tmp_path / "tools"`.
-- Update references in `tests/test_run_tlc.py` and other test files that mock cache paths or use `tlaplus_cli.tlc_manager` imports.
+## 4. Update Documentation
+- **README.md**:
+  - Update usage examples from `tla run <spec_name>` to `tla tlc <spec_name>`.
+  - Update the command history note that mentions the older structue.
+- **docs/module-how-to.md**: Update commands like `tla run queue` to `tla tlc queue` and fix related descriptions.
+- **docs/quick-module-overview.md**: Change `tla run queue` to `tla tlc queue`.
+- **verify**: verify that all docs files have a correct version of the command.
 
-### 4. Update Documentation and Changelog
-- Update `CHANGELOG.md` to reflect the command renaming (e.g., `tla tlc <action>` -> `tla tools <action>`) under the upcoming release section.
-- Review and update the main `README.md`, replacing old command usages `tla tlc ...` with `tla tools ...`.
-- Scan the `docs/` folder (such as `development.md`, `quick-module-overview.md`) for mentions of `tla tlc` or `tlc_manager.py` and update them accordingly.
+## 5. Update Changelog
+- **CHANGELOG.md**: Add a new specific entry under the [Unreleased] or current target version section noting that `tla run` has been renamed to `tla tlc` to better reflect its function, since the old `tlc` command group was renamed to `tools`.
 
-### 5. Validation
+## 6. Validation
 - Run tests using `uv run pytest` to ensure the rename didn't break existing functionality.
 - Run linters using `uv run poe lint` to verify type and style checks.
+- Manually run `uv run tla tlc --help` to confirm the CLI help is updated appropriately.

@@ -27,7 +27,7 @@ def compiled_modules(tmp_path_factory):
 
 @pytest.mark.skipif(not JAVA_AVAILABLE, reason="java not found")
 @pytest.mark.skipif(not JAVAC_AVAILABLE, reason="javac not found")
-def test_run_tlc_integration(mocker, tmp_path, capfd, queue_dir, base_settings):
+def test_tlc_integration(mocker, tmp_path, capfd, queue_dir, base_settings):
     """
     Integration test for run_tlc.tlc().
     1. Compiles the modules (prerequisite).
@@ -57,7 +57,7 @@ def test_run_tlc_integration(mocker, tmp_path, capfd, queue_dir, base_settings):
     assert (classes_dir / "tlc2/overrides/TLCOverrides.class").exists()
 
     # Run TLC on "queue" spec
-    res_tlc = runner.invoke(app, ["run", "queue"])
+    res_tlc = runner.invoke(app, ["tlc", "queue"])
     assert res_tlc.exit_code == 0, f"TLC run failed: {res_tlc.stdout}"
 
     # 3. Verify output
@@ -73,7 +73,7 @@ def test_run_tlc_integration(mocker, tmp_path, capfd, queue_dir, base_settings):
 
 
 def test_tlc_version_flag(mocker, capfd, base_settings, tmp_path):
-    """Test that 'tla run --version' prints the jar path and version."""
+    """Test that 'tla tlc --version' prints the jar path and version."""
     mocker.patch("tlaplus_cli.run_tlc.load_config", return_value=base_settings)
 
     # Create a fake pinned version dir with a jar
@@ -87,7 +87,7 @@ def test_tlc_version_flag(mocker, capfd, base_settings, tmp_path):
     mock_result.stderr = ""
     mocker.patch("tlaplus_cli.run_tlc.subprocess.run", return_value=mock_result)
 
-    result = runner.invoke(app, ["run", "--version"])
+    result = runner.invoke(app, ["tlc", "--version"])
     assert result.exit_code == 0
 
     captured = capfd.readouterr()

@@ -69,7 +69,7 @@ You need Java 11+ and `tla2tools.jar`. You can compile and run using either `tla
 ### Using `tlaplus-cli`
 The CLI automatically manages the classpath, dependency caching, and paths for you.
 * **Compile:** `tla build` (Compiles Java sources from `modules/` into `classes/`)
-* **Run TLC:** `tla run queue`
+* **Run TLC:** `tla tlc queue`
 
 ### Manual Setup (Without CLI)
 You must download `tla2tools.jar` (e.g., into `lib/`) and strictly control the classpath order.

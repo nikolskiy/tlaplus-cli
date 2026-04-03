@@ -323,7 +323,7 @@ def uninstall(
     for lv in targets:
         if pinned_dir_name and pinned_dir_name == lv.path.name:
             confirm = typer.confirm(
-                f"Version {lv.path.name} is currently pinned. Uninstalling it will break `tla run`. Continue?"
+                f"Version {lv.path.name} is currently pinned. Uninstalling it will break `tla tlc`. Continue?"
             )
             if not confirm:
                 typer.echo("Aborted.")
