@@ -57,7 +57,7 @@ tla tools upgrade
 > [!NOTE]
 > If the target version to upgrade is not yet installed locally, the CLI will automatically download it.
 
-Show the TLC2 version string and absolute path to the pinned version's `tla2tools.jar`:
+Show the absolute path to the pinned version's `tla2tools.jar`:
 ```bash
 tla tools path
 ```
@@ -69,7 +69,6 @@ tla tools path v1.8.0
 
 Example output:
 ```text
-TLC2 Version 2.19 of 08 August 2024 (rev: 5a47802)
 /home/bob/.cache/tla/tools/v1.8.0-5a47802/tla2tools.jar
 ```
 
@@ -110,7 +109,16 @@ For example (runs `queue.tla`):
 tla tlc queue
 ```
 
-> **Note:** Starting from version `0.3.0`, the command structure has changed. To run a model, use `tla tlc <spec>`. For version `0.2.x`, the command was `tla run <spec>`. Since `0.3.0`, management commands are under `tla tools`.
+The CLI intelligently resolves the specification file. It will check the following locations:
+1.  `<spec_name>` (if it's a direct path to a file, e.g., `models/my_model.tla`)
+2.  `<spec_name>.tla`
+3.  `spec/<spec_name>.tla` (checks an inner `spec/` folder relative to the spec's location)
+
+To check the currently pinned `tla2tools.jar` path and its TLC version:
+
+```bash
+tla tlc --version
+```
 
 ### Compile Custom Java Modules
 

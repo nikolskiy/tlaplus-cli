@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- `tla tlc` now intelligently resolves `<spec>` files:
+  - Supports running without the `.tla` extension.
+  - Automatically checks for files inside a `spec/` subdirectory relative to the specification path.
+  - Provides a detailed error message listing all checked locations when a specification cannot be found.
+- `tla tlc --version`: Added a flag to display the absolute path to the currently pinned `tla2tools.jar` and its internal TLC version string.
+
+### Changed
+- `tla tools path`: Output now strictly emits the absolute path to `tla2tools.jar` only, removing the TLC version string to better support scripting and piping.
+
 
 ## [0.3.1] - 2026-04-03
 

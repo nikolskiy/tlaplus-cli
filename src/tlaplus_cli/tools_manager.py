@@ -205,7 +205,7 @@ def path(version: str = typer.Argument(None)) -> None:
         if pinned_dir:
             jar = pinned_dir / "tla2tools.jar"
             if jar.exists():
-                _print_version_path(pinned_dir, jar)
+                _print_version_path(jar)
                 return
         typer.echo("Error: No pinned version found.", err=True)
         raise typer.Exit(1)
@@ -213,18 +213,15 @@ def path(version: str = typer.Argument(None)) -> None:
     for lv in list_local_versions():
         if lv.name == version:
             jar = lv.path / "tla2tools.jar"
-            _print_version_path(lv.path, jar)
+            _print_version_path(jar)
             return
     typer.echo(f"Error: Version {version} not found locally.", err=True)
     raise typer.Exit(1)
 
 
-def _print_version_path(version_dir: Path, jar_path: Path) -> None:
-    """Print the TLC2 version string (if available) and jar path."""
-    meta = read_version_metadata(version_dir)
-    if meta and meta.get("tlc2_version_string"):
-        typer.echo(meta["tlc2_version_string"])
-    typer.echo(str(jar_path))
+def _print_version_path(jar_path: Path) -> None:
+    """Print the absolute path to tla2tools.jar."""
+    typer.echo(str(jar_path.absolute()))
 
 
 @tools_app.command()

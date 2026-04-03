@@ -101,6 +101,7 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = [
     "ARG001", # Unused arguments are common in tests (fixtures)
+    "PLR0913", # Many arguments are common in tests (fixtures)
 ]
 
 [tool.poe.tasks]

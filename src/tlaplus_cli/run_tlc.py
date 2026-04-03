@@ -2,6 +2,7 @@
 
 import os
 import subprocess
+from pathlib import Path
 
 import typer
 
@@ -66,21 +67,44 @@ def tlc(
         typer.echo("Run 'tla tools install' first.", err=True)
         raise typer.Exit(1)
 
-    ws_root = workspace_root()
-    spec_dir = ws_root / config.workspace.spec_dir
-    spec_file = spec_dir / f"{spec}.tla"
-    if not spec_file.exists():
-        typer.echo(f"Error: specification not found: {spec_file}", err=True)
+    # Spec resolution logic
+    spec_path = Path(spec)
+
+    # Candidate 1: Direct path (handles explicit .tla extension)
+    direct_path = spec_path
+    # Candidate 2: Missing .tla extension
+    missing_extension = spec_path.with_suffix(".tla")
+    # Candidate 3: Inside spec/ subdirectory
+    inside_spec = spec_path.parent / "spec" / (spec_path.name + ".tla")
+
+    if direct_path.is_file():
+        spec_file = direct_path
+    elif missing_extension.is_file():
+        spec_file = missing_extension
+    elif inside_spec.is_file():
+        spec_file = inside_spec
+    else:
+        typer.echo("Error: Could not find a TLA+ spec file. Looked in the following locations:", err=True)
+        typer.echo(f"- {direct_path}", err=True)
+        typer.echo(f"- {missing_extension}", err=True)
+        typer.echo(f"- {inside_spec}", err=True)
         raise typer.Exit(1)
 
+    spec_file = spec_file.absolute()
+    spec_dir = spec_file.parent
+
     classpath = str(jar_path)
+    # Check for classes in the workspace root or near the spec?
+    # The original code used workspace_root() / config.workspace.classes_dir
+    ws_root = workspace_root()
+
     classes_path = ws_root / config.workspace.classes_dir
     if classes_path.exists():
         classpath = f"{classes_path}{os.pathsep}{classpath}"
 
-    cmd = ["java", *config.java.opts, "-cp", classpath, config.tlc.java_class, str(spec_file)]
+    cmd = ["java", *config.java.opts, "-cp", classpath, config.tlc.java_class, spec_file.name]
 
-    typer.echo(f"Running TLC on {spec}.tla ...")
+    typer.echo(f"Running TLC on {spec_file.name} ...")
     typer.echo(f"Command: {' '.join(cmd)}")
     result = subprocess.run(cmd, cwd=str(spec_dir))
     raise typer.Exit(result.returncode)

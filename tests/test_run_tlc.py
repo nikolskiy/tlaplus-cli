@@ -27,7 +27,7 @@ def compiled_modules(tmp_path_factory):
 
 @pytest.mark.skipif(not JAVA_AVAILABLE, reason="java not found")
 @pytest.mark.skipif(not JAVAC_AVAILABLE, reason="javac not found")
-def test_tlc_integration(mocker, tmp_path, capfd, queue_dir, base_settings):
+def test_tlc_integration(mocker, tmp_path, capfd, queue_dir, base_settings, monkeypatch):
     """
     Integration test for run_tlc.tlc().
     1. Compiles the modules (prerequisite).
@@ -57,6 +57,7 @@ def test_tlc_integration(mocker, tmp_path, capfd, queue_dir, base_settings):
     assert (classes_dir / "tlc2/overrides/TLCOverrides.class").exists()
 
     # Run TLC on "queue" spec
+    monkeypatch.chdir(queue_dir)
     res_tlc = runner.invoke(app, ["tlc", "queue"])
     assert res_tlc.exit_code == 0, f"TLC run failed: {res_tlc.stdout}"
 
@@ -73,17 +74,17 @@ def test_tlc_integration(mocker, tmp_path, capfd, queue_dir, base_settings):
 
 
 def test_tlc_version_flag(mocker, capfd, base_settings, tmp_path):
-    """Test that 'tla tlc --version' prints the jar path and version."""
+    """Test that 'tla tlc --version' prints the jar path and only the first line of TLC version."""
     mocker.patch("tlaplus_cli.run_tlc.load_config", return_value=base_settings)
 
     # Create a fake pinned version dir with a jar
-    pinned_dir = tmp_path / "tools" / "v1.8.0-abcdef1"
+    pinned_dir = (tmp_path / "tools" / "v1.8.0-abcdef1").absolute()
     pinned_dir.mkdir(parents=True)
     (pinned_dir / "tla2tools.jar").write_bytes(b"fake jar")
     mocker.patch("tlaplus_cli.run_tlc.get_pinned_version_dir", return_value=pinned_dir)
 
     mock_result = mocker.MagicMock()
-    mock_result.stdout = "TLC2 Version Mock\\nSome other output"
+    mock_result.stdout = "TLC2 Version Mock\nSome other output"
     mock_result.stderr = ""
     mocker.patch("tlaplus_cli.run_tlc.subprocess.run", return_value=mock_result)
 
@@ -92,5 +93,6 @@ def test_tlc_version_flag(mocker, capfd, base_settings, tmp_path):
 
     captured = capfd.readouterr()
     stdout = captured.out + result.stdout
-    assert "tla2tools.jar path:" in stdout
+    assert f"tla2tools.jar path: {pinned_dir / 'tla2tools.jar'}" in stdout
     assert "TLC2 Version Mock" in stdout
+    assert "Some other output" not in stdout

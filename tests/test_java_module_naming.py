@@ -42,7 +42,7 @@ def setup_naming_env(tmp_path, mocker, base_settings, fixture_dir):
 
 @pytest.mark.skipif(not JAVA_AVAILABLE, reason="java not found")
 @pytest.mark.skipif(not JAVAC_AVAILABLE, reason="javac not found")
-def test_tlc_overrides_naming_works(tmp_path, mocker, base_settings, capfd, naming_fixed_dir):
+def test_tlc_overrides_naming_works(tmp_path, mocker, base_settings, capfd, naming_fixed_dir, monkeypatch):
     """
     Tests that naming the class 'TLCOverrides' in 'tlc2.overrides' package works.
     This is the currently supported approach.
@@ -52,6 +52,7 @@ def test_tlc_overrides_naming_works(tmp_path, mocker, base_settings, capfd, nami
     res_build = runner.invoke(app, ["build"])
     assert res_build.exit_code == 0, f"Module compilation failed: {res_build.stdout}"
 
+    monkeypatch.chdir(naming_fixed_dir)
     res_tlc = runner.invoke(app, ["tlc", "test_spec"])
     assert res_tlc.exit_code == 0, f"TLC run failed: {res_tlc.stdout}"
 
@@ -61,7 +62,7 @@ def test_tlc_overrides_naming_works(tmp_path, mocker, base_settings, capfd, nami
 
 @pytest.mark.skipif(not JAVA_AVAILABLE, reason="java not found")
 @pytest.mark.skipif(not JAVAC_AVAILABLE, reason="javac not found")
-def test_module_name_class_naming_fails(tmp_path, mocker, base_settings, capfd, naming_dynamic_dir):
+def test_module_name_class_naming_fails(tmp_path, mocker, base_settings, capfd, naming_dynamic_dir, monkeypatch):
     """
     Tests that naming the class after the module ('TestModule') fails to load the override.
     According to current TLC behavior, this doesn't work. We want this test to pass
@@ -72,6 +73,7 @@ def test_module_name_class_naming_fails(tmp_path, mocker, base_settings, capfd, 
     res_build = runner.invoke(app, ["build"])
     assert res_build.exit_code == 0, f"Module compilation failed: {res_build.stdout}"
 
+    monkeypatch.chdir(naming_dynamic_dir)
     res_tlc = runner.invoke(app, ["tlc", "test_spec"])
     assert res_tlc.exit_code == 0, f"TLC run failed: {res_tlc.stdout}"
 
