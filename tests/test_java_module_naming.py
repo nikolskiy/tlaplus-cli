@@ -37,7 +37,6 @@ def setup_naming_env(tmp_path, mocker, base_settings, fixture_dir):
     mocker.patch("tlaplus_cli.build_tlc_module.load_config", return_value=base_settings)
     mocker.patch("tlaplus_cli.build_tlc_module.workspace_root", return_value=fixture_dir)
     mocker.patch("tlaplus_cli.run_tlc.load_config", return_value=base_settings)
-    mocker.patch("tlaplus_cli.run_tlc.workspace_root", return_value=fixture_dir)
 
 
 @pytest.mark.skipif(not JAVA_AVAILABLE, reason="java not found")
@@ -49,7 +48,7 @@ def test_tlc_overrides_naming_works(tmp_path, mocker, base_settings, capfd, nami
     """
     setup_naming_env(tmp_path, mocker, base_settings, naming_fixed_dir)
 
-    res_build = runner.invoke(app, ["build"])
+    res_build = runner.invoke(app, ["modules", "build"])
     assert res_build.exit_code == 0, f"Module compilation failed: {res_build.stdout}"
 
     monkeypatch.chdir(naming_fixed_dir)
@@ -70,7 +69,7 @@ def test_module_name_class_naming_fails(tmp_path, mocker, base_settings, capfd, 
     """
     setup_naming_env(tmp_path, mocker, base_settings, naming_dynamic_dir)
 
-    res_build = runner.invoke(app, ["build"])
+    res_build = runner.invoke(app, ["modules", "build"])
     assert res_build.exit_code == 0, f"Module compilation failed: {res_build.stdout}"
 
     monkeypatch.chdir(naming_dynamic_dir)

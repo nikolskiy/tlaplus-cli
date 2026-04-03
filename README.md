@@ -109,10 +109,17 @@ For example (runs `queue.tla`):
 tla tlc queue
 ```
 
-The CLI intelligently resolves the specification file. It will check the following locations:
+#### Project-Aware Execution
+
+The CLI intelligently resolves the specification file and its project structure. It will check the following locations:
 1.  `<spec_name>` (if it's a direct path to a file, e.g., `models/my_model.tla`)
 2.  `<spec_name>.tla`
 3.  `spec/<spec_name>.tla` (checks an inner `spec/` folder relative to the spec's location)
+
+Furthermore, it automatically discovers the **project root** by looking for `modules/`, `classes/`, or `lib/` directories adjacent to the spec file or its parent. When a project root is found:
+- The project's `classes/` directory is added to the Java classpath.
+- Any `*.jar` files found in the project's `lib/` directory are added to the Java classpath.
+- The `-DTLA-Library` system property is set to the project's `modules/` directory, allowing TLC to find your custom Java overrides.
 
 To check the currently pinned `tla2tools.jar` path and its TLC version:
 
@@ -122,19 +129,28 @@ tla tlc --version
 
 ### Compile Custom Java Modules
 
-Note that modules are compiled using the pinned version of the toolset.
+Java modules (overrides) are compiled using the pinned version of the toolset.
 
-Compile modules:
+Compile modules in the current project:
 ```bash
-tla build
+tla modules build
+```
+
+Compile modules in a specific project path:
+```bash
+tla modules build path/to/project
 ```
 
 Verbose output:
 ```bash
-tla build --verbose
+tla modules build --verbose
 ```
 
-Compiles `.java` files from `workspace/modules/` into `workspace/classes/`.
+The build command:
+1. Resolves the project root (defaults to `workspace.root` from config).
+2. Includes `lib/*.jar` files from the project root in the `javac` classpath.
+3. Compiles `.java` files from the project's `modules/` directory into its `classes/` directory.
+4. Generates the necessary Java service provider configuration for TLC overrides.
 
 ### Check Java Version
 

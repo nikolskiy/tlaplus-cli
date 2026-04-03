@@ -13,8 +13,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   - Automatically checks for files inside a `spec/` subdirectory relative to the specification path.
   - Provides a detailed error message listing all checked locations when a specification cannot be found.
 - `tla tlc --version`: Added a flag to display the absolute path to the currently pinned `tla2tools.jar` and its internal TLC version string.
+- Project-aware TLA+ support:
+  - `tla tlc` now automatically discovers project roots by looking for `modules/`, `classes/`, or `lib/` directories adjacent to the spec or its parent.
+  - TLC's classpath now includes the project's `classes/` directory and any `*.jar` files found in the project's `lib/` directory.
+  - `-DTLA-Library` is automatically set to the project's `modules/` directory if it exists.
+- `tla modules build`:
+  - Added an optional `[PATH]` argument to specify the project root (defaults to workspace root).
+  - Automatically includes `lib/*.jar` files from the project root in the `javac` classpath.
 
 ### Changed
+- `tla build` renamed to `tla modules build` for better command organization.
 - `tla tools path`: Output now strictly emits the absolute path to `tla2tools.jar` only, removing the TLC version string to better support scripting and piping.
 
 

@@ -41,7 +41,6 @@ def test_tlc_integration(mocker, tmp_path, capfd, queue_dir, base_settings, monk
     base_settings.workspace.classes_dir = classes_dir
 
     mocker.patch("tlaplus_cli.run_tlc.load_config", return_value=base_settings)
-    mocker.patch("tlaplus_cli.run_tlc.workspace_root", return_value=queue_dir)
 
     # We also need to patch build_tlc_module's config loading to compile first
     mocker.patch("tlaplus_cli.build_tlc_module.load_config", return_value=base_settings)
@@ -49,9 +48,8 @@ def test_tlc_integration(mocker, tmp_path, capfd, queue_dir, base_settings, monk
     mocker.patch("tlaplus_cli.build_tlc_module.workspace_root", return_value=queue_dir)
 
     # 1. Compile modules
-    res_build = runner.invoke(app, ["build"])
+    res_build = runner.invoke(app, ["modules", "build"])
     assert res_build.exit_code == 0, f"Module compilation failed: {res_build.stdout}"
-
     # 2. Run TLC
     # Verify that classes_dir is populated
     assert (classes_dir / "tlc2/overrides/TLCOverrides.class").exists()

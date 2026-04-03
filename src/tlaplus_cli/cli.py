@@ -47,12 +47,15 @@ def root(
 
 # --- Subcommands ---
 
-# Attach typer subgroups for tools and fetch-cache
+# Attach typer subgroups
+modules_app = typer.Typer(name="modules", help="Manage TLA+ Java modules.", no_args_is_help=True)
+modules_app.command(name="build")(build_tlc_cmd)
+
+app.add_typer(modules_app, name="modules")
 app.add_typer(tools_app, name="tools")
 app.add_typer(fetch_cache_app, name="fetch-cache")
 
 app.command(name="tlc")(run_tlc_cmd)
-app.command(name="build")(build_tlc_cmd)
 
 
 @app.command(name="check-java")
