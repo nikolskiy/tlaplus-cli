@@ -58,7 +58,7 @@ inside the test scope so Typer's `CliRunner` operates in isolation and never tou
 `~/.cache` directory.
 
 **Sub-component patching:** When testing functions that loop over installed versions (e.g.,
-`tla tlc meta sync`), patch out the heavy I/O helpers with `mocker.patch(...)` and assert on
+`tla tools meta sync`), patch out the heavy I/O helpers with `mocker.patch(...)` and assert on
 `call_args` directly instead of validating filesystem side effects.
 
 **Unused unpacked variables:** Suppress `RUF059` warnings by using underscores for intentionally

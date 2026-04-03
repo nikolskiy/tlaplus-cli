@@ -11,7 +11,7 @@ A step-by-step guide to creating Java operator overrides for use with the TLC mo
 Download `tla2tools.jar` from the [TLA+ GitHub releases](https://github.com/tlaplus/tlaplus/releases) or find it in your Toolbox installation. Place it in a `lib/` directory in your project.
 
 ### Using `tlaplus-cli`
-Run `tla download` to automatically fetch the latest stable release into your system cache (`~/.cache/tla/tla2tools.jar`).
+Run `tla tools install` to automatically fetch the latest stable release into your system cache (`~/.cache/tla/tools/`).
 
 ---
 
@@ -204,7 +204,7 @@ java -cp classes;lib\tla2tools.jar tlc2.TLC spec\queue.tla
 ### Using `tlaplus-cli`
 
 ```bash
-tla tlc queue
+tla run queue
 ```
 
 The CLI automatically constructs the correct classpath using your cached `tla2tools.jar` and your compiled `classes/` directory, and runs `tlc2.TLC` with appropriate Java garbage collection options.
@@ -245,7 +245,7 @@ pw.flush();
 pw.close();
 ```
 
-The file path is relative to TLC's working directory (the spec directory when using `tla tlc`).
+The file path is relative to TLC's working directory (the spec directory when using `tla run`).
 
 ---
 

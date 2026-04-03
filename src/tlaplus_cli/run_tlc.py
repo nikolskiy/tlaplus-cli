@@ -21,7 +21,7 @@ def version_callback(value: bool) -> None:
 
         if not jar_path.exists():
             typer.echo(f"Error: tla2tools.jar not found at {jar_path}", err=True)
-            typer.echo("Run 'tla tlc install' first.", err=True)
+            typer.echo("Run 'tla tools install' first.", err=True)
             raise typer.Exit(1)
 
         cmd = ["java", "-cp", str(jar_path), config.tlc.java_class]
@@ -63,7 +63,7 @@ def tlc(
 
     if not jar_path.exists():
         typer.echo("Error: tla2tools.jar not found.", err=True)
-        typer.echo("Run 'tla tlc install' first.", err=True)
+        typer.echo("Run 'tla tools install' first.", err=True)
         raise typer.Exit(1)
 
     ws_root = workspace_root()

@@ -98,13 +98,13 @@ def get_github_cache_file() -> Path:
     return cache_dir() / "github_cache.json"
 
 
-def get_tlc_dir() -> Path:
-    return cache_dir() / "tlc"
+def get_tools_dir() -> Path:
+    return cache_dir() / "tools"
 
 
 def get_pinned_path() -> Path:
     """Returns path to the pin marker file."""
-    return get_tlc_dir() / "tlc-pinned-version.txt"
+    return get_tools_dir() / "tools-pinned-version.txt"
 
 
 def get_pinned_version_dir() -> Path | None:
@@ -116,25 +116,44 @@ def get_pinned_version_dir() -> Path | None:
     dir_name = pin_file.read_text().strip()
     if not dir_name:
         return None
-    target = get_tlc_dir() / dir_name
+    target = get_tools_dir() / dir_name
     return target if target.is_dir() else None
 
 
 def _migrate_legacy_pin() -> None:
-    """Migrate old symlink-based pin to text file."""
-    legacy_pin = get_tlc_dir() / "pinned"
-    if legacy_pin.is_symlink():
+    """Migrate legacy cache directory and pin files."""
+    old_dir = cache_dir() / "tlc"
+    new_dir = get_tools_dir()
+
+    # 1. Migrate directory
+    if old_dir.exists() and not new_dir.exists():
         try:
-            target_name = legacy_pin.readlink().name
-            legacy_pin.unlink()
-            pin_file = get_pinned_path()
-            pin_file.write_text(target_name)
+            old_dir.rename(new_dir)
         except Exception as e:
-            typer.echo(f"⚠ Warning: Failed to migrate legacy pin: {e}", err=True)
+            typer.echo(f"⚠ Warning: Failed to migrate legacy cache: {e}", err=True)
+
+    # 2. Migrate legacy symlink pin
+    legacy_symlink = new_dir / "pinned"
+    if legacy_symlink.is_symlink():
+        try:
+            target_name = legacy_symlink.readlink().name
+            legacy_symlink.unlink()
+            get_pinned_path().write_text(target_name)
+        except Exception as e:
+            typer.echo(f"⚠ Warning: Failed to migrate legacy symlink pin: {e}", err=True)
+
+    # 3. Migrate legacy filename tlc-pinned-version.txt -> tools-pinned-version.txt
+    old_pin_file = new_dir / "tlc-pinned-version.txt"
+    new_pin_file = get_pinned_path()
+    if old_pin_file.exists() and not new_pin_file.exists():
+        try:
+            old_pin_file.rename(new_pin_file)
+        except Exception as e:
+            typer.echo(f"⚠ Warning: Failed to migrate legacy pin file: {e}", err=True)
 
 
 def set_pin(version_dir: Path) -> None:
-    """Pin a version by writing its directory name to tlc-pinned-version.txt."""
+    """Pin a version by writing its directory name to tools-pinned-version.txt."""
     pin_file = get_pinned_path()
     pin_file.parent.mkdir(parents=True, exist_ok=True)
     pin_file.write_text(version_dir.name)
@@ -148,11 +167,11 @@ def clear_pin() -> None:
 
 
 def list_local_versions() -> list[LocalVersion]:
-    tlc_dir = get_tlc_dir()
-    if not tlc_dir.exists():
+    tools_dir = get_tools_dir()
+    if not tools_dir.exists():
         return []
     result = []
-    for d in tlc_dir.iterdir():
+    for d in tools_dir.iterdir():
         if d.is_dir() and not d.is_symlink():
             parts = d.name.rsplit("-", 1)
             if len(parts) == 2:
@@ -217,8 +236,8 @@ def clear_cache() -> None:
 
 def download_version(target: RemoteVersion, *, force: bool = False) -> Path:
     """Download a TLC version jar. Returns the version directory path."""
-    tlc_dir = get_tlc_dir()
-    version_dir = tlc_dir / f"{target.name}-{target.short_sha}"
+    tools_dir = get_tools_dir()
+    version_dir = tools_dir / f"{target.name}-{target.short_sha}"
 
     if version_dir.exists() and not force:
         return version_dir

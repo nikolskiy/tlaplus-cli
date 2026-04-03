@@ -77,7 +77,7 @@ def test_tlc_version_flag(mocker, capfd, base_settings, tmp_path):
     mocker.patch("tlaplus_cli.run_tlc.load_config", return_value=base_settings)
 
     # Create a fake pinned version dir with a jar
-    pinned_dir = tmp_path / "tlc" / "v1.8.0-abcdef1"
+    pinned_dir = tmp_path / "tools" / "v1.8.0-abcdef1"
     pinned_dir.mkdir(parents=True)
     (pinned_dir / "tla2tools.jar").write_bytes(b"fake jar")
     mocker.patch("tlaplus_cli.run_tlc.get_pinned_version_dir", return_value=pinned_dir)

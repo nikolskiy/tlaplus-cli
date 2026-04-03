@@ -14,7 +14,7 @@ from tlaplus_cli.version_manager import (
     download_version,
     fetch_remote_versions,
     get_pinned_version_dir,
-    get_tlc_dir,
+    get_tools_dir,
     list_local_versions,
     read_version_metadata,
     resolve_latest_version,
@@ -22,13 +22,13 @@ from tlaplus_cli.version_manager import (
     write_version_metadata,
 )
 
-tlc_app = typer.Typer(help="Manage TLC versions")
-meta_app = typer.Typer(help="Manage TLC metadata")
-tlc_app.add_typer(meta_app, name="meta")
+tools_app = typer.Typer(help="Manage TLA+ tools (TLC, SANY, TLATeX)")
+meta_app = typer.Typer(help="Manage tools metadata")
+tools_app.add_typer(meta_app, name="meta")
 fetch_cache_app = typer.Typer(help="Manage GitHub API cache")
 
 
-@tlc_app.command(name="list")
+@tools_app.command(name="list")
 def list_versions() -> None:
     config = load_config()
     versions, status = fetch_remote_versions(config.tla.urls.tags, config.tla.urls.releases, config.tla.urls.per_page)
@@ -41,7 +41,7 @@ def list_versions() -> None:
     # key: (name, short_sha)
     displayed: set[tuple[str, str]] = set()
 
-    title = "TLC Versions"
+    title = "TLA+ Tools Versions"
     if status == FetchStatus.STALE:
         title += " (cached)"
     elif status == FetchStatus.UNAVAILABLE:
@@ -95,7 +95,7 @@ def list_versions() -> None:
     console.print(table)
 
 
-@tlc_app.command()
+@tools_app.command()
 def install(
     version: str = typer.Argument(None),
     force: bool = typer.Option(False, "--force", "-f", help="Force re-download even if already installed."),
@@ -115,7 +115,7 @@ def install(
         target = versions[0]
         typer.echo(f"No version specified, selecting latest: {target.name}")
 
-    version_dir = get_tlc_dir() / f"{target.name}-{target.short_sha}"
+    version_dir = get_tools_dir() / f"{target.name}-{target.short_sha}"
     jar_path = version_dir / "tla2tools.jar"
 
     if jar_path.exists() and not force:
@@ -152,7 +152,7 @@ def _resolve_upgrade_target(version: str | None, pinned_dir: Path | None) -> tup
     return target_name, pinned_dir
 
 
-@tlc_app.command()
+@tools_app.command()
 def upgrade(version: str = typer.Argument(None)) -> None:
     pinned_dir = get_pinned_version_dir()
     pinned_dir_name = pinned_dir.name if pinned_dir else None
@@ -197,7 +197,7 @@ def upgrade(version: str = typer.Argument(None)) -> None:
         typer.echo(f"Updated pin to {new_dir.name}")
 
 
-@tlc_app.command()
+@tools_app.command()
 def path(version: str = typer.Argument(None)) -> None:
     """Show the path to tla2tools.jar for the pinned or specified version."""
     if not version:
@@ -227,7 +227,7 @@ def _print_version_path(version_dir: Path, jar_path: Path) -> None:
     typer.echo(str(jar_path))
 
 
-@tlc_app.command()
+@tools_app.command()
 def pin(version: str = typer.Argument(None)) -> None:
     local_versions = list_local_versions()
     if not local_versions:
@@ -262,13 +262,13 @@ def pin(version: str = typer.Argument(None)) -> None:
     typer.echo(f"Pinned version set to {target.path.name}")
 
 
-@tlc_app.command(name="dir")
+@tools_app.command(name="dir")
 def show_dir() -> None:
-    """Show the TLC versions directory and its contents."""
-    tlc_dir = get_tlc_dir()
-    typer.echo(str(tlc_dir))
-    if tlc_dir.exists():
-        entries = sorted(d.name for d in tlc_dir.iterdir() if d.is_dir() and not d.is_symlink())
+    """Show the tools versions directory and its contents."""
+    tools_dir = get_tools_dir()
+    typer.echo(str(tools_dir))
+    if tools_dir.exists():
+        entries = sorted(d.name for d in tools_dir.iterdir() if d.is_dir() and not d.is_symlink())
         for entry in entries:
             typer.echo(f"  {entry}")
 
@@ -296,7 +296,7 @@ def _resolve_uninstall_targets(version: str, all_tags: bool) -> list[LocalVersio
     return matching
 
 
-@tlc_app.command()
+@tools_app.command()
 def uninstall(
     version: str = typer.Argument(None),
     all: bool = typer.Option(False, "--all", help="Remove all matching versions."),

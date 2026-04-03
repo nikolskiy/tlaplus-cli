@@ -8,8 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- **Breaking Change**: Renamed the `tlc` subcommand group to `tools` to better reflect that it manages the entire TLA+ toolset distribution (TLC, SANY, TLATeX).
+  - `tla tlc <action>` is now `tla tools <action>`.
+  - Internal cache directory moved from `~/.cache/tlaplus-cli/tlc` to `~/.cache/tlaplus-cli/tools`.
+  - Pin file renamed to `tools-pinned-version.txt`.
+  - Automatic migration of existing cache and pins is performed on first run.
 - Intelligent pin state management:
-  - **Auto-pinning**: The first TLC version installed is now automatically pinned.
+  - **Auto-pinning**: The first toolset version installed is now automatically pinned.
   - **Pin stability**: Subsequent installations of other versions will no longer "hijack" the current pin.
   - **Smart Fallback**: Uninstalling the pinned version now automatically re-pins the "latest" remaining version based on semantic versioning, release date, or directory age.
 - `uninstall`: Added `--all` flag to remove all tags for a specific version name.

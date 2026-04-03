@@ -22,36 +22,36 @@ uv tool uninstall tlaplus-cli
 
 ## Usage
 
-### Managing TLC Versions
+### Managing TLA+ Tools
 
-The `tla tlc` command group allows you to download and manage multiple versions of the TLC model checker directly from GitHub releases. 
+The `tla tools` command group allows you to download and manage multiple versions of the TLA+ toolset (TLC, SANY, TLATeX) directly from GitHub releases. 
 
-List available and installed TLC versions:
+List available and installed toolset versions:
 ```bash
-tla tlc list
+tla tools list
 ```
 
-Install the latest TLC version:
+Install the latest toolset version:
 ```bash
-tla tlc install
+tla tools install
 ```
 
 > [!TIP]
-> The first version you install is automatically "pinned" as the default. Subsequent installs won't change your pin unless you manually use `tla tlc pin`.
+> The first version you install is automatically "pinned" as the default. Subsequent installs won't change your pin unless you manually use `tla tools pin`.
 
-Install a specific TLC version:
+Install a specific toolset version:
 ```bash
-tla tlc install v1.8.0
+tla tools install v1.8.0
 ```
 
 Pin a specific version to be used by default:
 ```bash
-tla tlc pin v1.8.0
+tla tools pin v1.8.0
 ```
 
 Upgrade the pinned version (or a specific version) to a newer commit:
 ```bash
-tla tlc upgrade
+tla tools upgrade
 ```
 
 > [!NOTE]
@@ -59,35 +59,35 @@ tla tlc upgrade
 
 Show the TLC2 version string and absolute path to the pinned version's `tla2tools.jar`:
 ```bash
-tla tlc path
+tla tools path
 ```
 
 Or for a specific version:
 ```bash
-tla tlc path v1.8.0
+tla tools path v1.8.0
 ```
 
 Example output:
 ```text
 TLC2 Version 2.19 of 08 August 2024 (rev: 5a47802)
-/home/bob/.cache/tla/tlc/v1.8.0-5a47802/tla2tools.jar
+/home/bob/.cache/tla/tools/v1.8.0-5a47802/tla2tools.jar
 ```
 
-Show the TLC versions directory and all installed version directories:
+Show the toolset versions directory and all installed version directories:
 ```bash
-tla tlc dir
+tla tools dir
 ```
 
 Example output:
 ```text
-/home/bob/.cache/tla/tlc
+/home/bob/.cache/tla/tools
   v1.7.0-abc1234
   v1.8.0-5a47802
 ```
 
 Uninstall a specific version (or use 'default' to remove legacy jars):
 ```bash
-tla tlc uninstall v1.8.0
+tla tools uninstall v1.8.0
 ```
 
 > [!TIP]
@@ -98,7 +98,7 @@ tla tlc uninstall v1.8.0
 
 ### Run TLC
 
-Run the TLC model checker on a specification. This uses the currently pinned TLC version.
+Run the TLC model checker on a specification. This uses the currently pinned toolset version.
 
 ```bash
 tla run <spec_name>
@@ -110,11 +110,11 @@ For example (runs `queue.tla`):
 tla run queue
 ```
 
-> **Note:** Starting from version `0.2.0`, the command structure has changed. To run a model, use `tla run <spec>`. For older versions (<0.2.0), the command was `tla tlc <spec>`.
+> **Note:** Starting from version `0.2.0`, the command structure has changed. To run a model, use `tla run <spec>`. For versions < 0.2.0, the command was `tla tlc <spec>`. Since 0.3.0, management commands are under `tla tools`.
 
 ### Compile Custom Java Modules
 
-Note that modules are compiled using the pinned version of TLC.
+Note that modules are compiled using the pinned version of the toolset.
 
 Compile modules:
 ```bash
@@ -180,7 +180,7 @@ java:
 | Directory | Purpose | Location |
 |---|---|---|
 | Config | `config.yaml` | `~/.config/tla/` |
-| TLC Versions | Version dirs & `tlc-pinned-version.txt` file | `~/.cache/tla/tlc/` |
+| Toolset Versions | Version dirs & `tools-pinned-version.txt` file | `~/.cache/tla/tools/` |
 | API Cache | `github_cache.json` | `~/.cache/tla/` |
 | Workspace | specs + modules + classes | Set via `workspace.root` in config |
 

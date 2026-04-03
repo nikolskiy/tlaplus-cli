@@ -8,11 +8,11 @@ from tlaplus_cli.build_tlc_module import build as build_tlc_cmd
 from tlaplus_cli.check_java import check_java_version, get_java_version
 from tlaplus_cli.config import load_config
 from tlaplus_cli.run_tlc import tlc as run_tlc_cmd
-from tlaplus_cli.tlc_manager import fetch_cache_app, tlc_app
+from tlaplus_cli.tools_manager import fetch_cache_app, tools_app
 
 app = typer.Typer(
     name="tla",
-    help="TLA+ tools: download TLC, compile custom modules, run model checker.",
+    help="TLA+ tools: download TLA+ toolset distribution, compile custom modules, run model checker.",
     no_args_is_help=True,
     add_completion=False,
 )
@@ -47,8 +47,8 @@ def root(
 
 # --- Subcommands ---
 
-# Attach typer subgroups for TLC and fetch-cache
-app.add_typer(tlc_app, name="tlc")
+# Attach typer subgroups for tools and fetch-cache
+app.add_typer(tools_app, name="tools")
 app.add_typer(fetch_cache_app, name="fetch-cache")
 
 app.command(name="run")(run_tlc_cmd)
