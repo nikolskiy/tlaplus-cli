@@ -2,19 +2,13 @@
 
 import importlib.metadata
 
-import truststore
 import typer
 
-# Inject truststore as early as possible so that all standard library
-# and third-party tools relying on `ssl` (such as `requests` and `urllib3`)
-# utilize the native OS trust store.
-truststore.inject_into_ssl()
-
-from tlaplus_cli.build_tlc_module import build as build_tlc_cmd  # noqa: E402
-from tlaplus_cli.check_java import check_java_version, get_java_version  # noqa: E402
-from tlaplus_cli.config import load_config  # noqa: E402
-from tlaplus_cli.run_tlc import tlc as run_tlc_cmd  # noqa: E402
-from tlaplus_cli.tools_manager import fetch_cache_app, tools_app  # noqa: E402
+from tlaplus_cli.build_tlc_module import build as build_tlc_cmd
+from tlaplus_cli.check_java import check_java_version, get_java_version
+from tlaplus_cli.config import load_config
+from tlaplus_cli.run_tlc import tlc as run_tlc_cmd
+from tlaplus_cli.tools_manager import fetch_cache_app, tools_app
 
 app = typer.Typer(
     name="tla",
