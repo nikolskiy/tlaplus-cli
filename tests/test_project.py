@@ -9,6 +9,7 @@ def test_project_root_at_spec_dir(tmp_path):
     root = find_project_root(spec, modules_dir="modules", classes_dir="classes", lib_dir="lib")
     assert root == tmp_path
 
+
 def test_project_root_at_parent_of_spec_dir(tmp_path):
     """Root found one level up when spec is inside a spec/ subdirectory."""
     spec_subdir = tmp_path / "spec"
@@ -19,6 +20,7 @@ def test_project_root_at_parent_of_spec_dir(tmp_path):
     root = find_project_root(spec, modules_dir="modules", classes_dir="classes", lib_dir="lib")
     assert root == tmp_path
 
+
 def test_project_root_none_when_no_structure(tmp_path):
     """Returns None if neither spec dir nor its parent contain project directories."""
     spec = tmp_path / "spec" / "queue.tla"
@@ -26,6 +28,7 @@ def test_project_root_none_when_no_structure(tmp_path):
     spec.write_text("MODULE queue\n===\n")
     root = find_project_root(spec, modules_dir="modules", classes_dir="classes", lib_dir="lib")
     assert root is None
+
 
 def test_project_root_detected_by_lib(tmp_path):
     """Root found based on lib/ directory even without classes/."""
@@ -35,6 +38,7 @@ def test_project_root_detected_by_lib(tmp_path):
     (tmp_path / "lib").mkdir()
     root = find_project_root(spec, modules_dir="modules", classes_dir="classes", lib_dir="lib")
     assert root == tmp_path
+
 
 def test_project_root_detected_by_modules(tmp_path):
     """Root found based on modules/ directory alone."""

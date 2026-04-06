@@ -69,8 +69,7 @@ def tlc(
 
     # Spec resolution logic
     spec_path = Path(spec)
-    candidates = [spec_path, spec_path.with_suffix(".tla"),
-                  spec_path.parent / "spec" / (spec_path.name + ".tla")]
+    candidates = [spec_path, spec_path.with_suffix(".tla"), spec_path.parent / "spec" / (spec_path.name + ".tla")]
 
     spec_file = next((c for c in candidates if c.is_file()), None)
     if not spec_file:
@@ -97,8 +96,15 @@ def tlc(
         if modules_path.is_dir():
             extra_jvm_opts.append(f"-DTLA-Library={modules_path}")
 
-    cmd = ["java", *config.java.opts, *extra_jvm_opts, "-cp", os.pathsep.join(classpath_parts),
-           config.tlc.java_class, spec_file.name]
+    cmd = [
+        "java",
+        *config.java.opts,
+        *extra_jvm_opts,
+        "-cp",
+        os.pathsep.join(classpath_parts),
+        config.tlc.java_class,
+        spec_file.name,
+    ]
 
     typer.echo(f"Running TLC on {spec_file.name} ...\nCommand: {' '.join(cmd)}")
     result = subprocess.run(cmd, cwd=str(spec_file.parent))

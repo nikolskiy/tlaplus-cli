@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tlaplus-cli"
-version = "0.3.2"
+version = "0.3.3"
 description = "TLA+ tools: download TLC, compile custom modules, run model checker"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -45,7 +45,8 @@ where = ["src"]
 include = ["tlaplus_cli*"]
 
 [tool.setuptools.package-data]
-tlaplus_cli = ["resources/default_config.yaml", "py.typed"]
+tlaplus_cli = ["py.typed"]
+"tlaplus_cli.resources" = ["*.yaml"]
 
 [dependency-groups]
 dev = [

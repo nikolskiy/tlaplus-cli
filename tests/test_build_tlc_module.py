@@ -100,8 +100,8 @@ def test_build_with_explicit_path(mocker, tmp_path, base_settings):
     assert result.exit_code == 0
     args, _ = mock_run.call_args
     cmd = args[0]
-    assert str(project_dir / "classes") in cmd   # -d target
-    assert str(modules_dir / "Foo.java") in cmd   # source file
+    assert str(project_dir / "classes") in cmd  # -d target
+    assert str(modules_dir / "Foo.java") in cmd  # source file
 
 
 def test_build_without_path_uses_workspace_root(mocker, tmp_path, base_settings):

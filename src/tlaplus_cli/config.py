@@ -1,4 +1,4 @@
-import shutil
+import importlib.resources
 from functools import lru_cache
 from pathlib import Path
 
@@ -37,9 +37,12 @@ def cache_dir() -> Path:
     return Path(platformdirs.user_cache_dir(_APP_NAME))
 
 
-def _default_config_path() -> Path:
-    """Path to the default config shipped with the package."""
-    return Path(__file__).parent / "resources" / "default_config.yaml"
+def _default_config_content() -> str:
+    """Read the default config shipped with the package."""
+    # Safer than __file__, correctly handles zipped wheels and zipapps.
+    return (
+        importlib.resources.files("tlaplus_cli.resources").joinpath("default_config.yaml").read_text(encoding="utf-8")
+    )
 
 
 def _ensure_config() -> Path:
@@ -47,7 +50,8 @@ def _ensure_config() -> Path:
     cp = config_path()
     if not cp.exists():
         cp.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(_default_config_path(), cp)
+        # Write default config to the newly created path
+        cp.write_text(_default_config_content(), encoding="utf-8")
     return cp
 
 

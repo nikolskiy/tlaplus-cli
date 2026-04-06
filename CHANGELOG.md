@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-04-06
+
+### Fixed
+- Resolved `FileNotFoundError` when loading the default configuration in certain installation environments (e.g., `uv tool install`) by switching to `importlib.resources` for robust package data access.
+
 ## [0.3.2] - 2026-04-03
 
 ### Added

@@ -5,11 +5,7 @@ from pathlib import Path
 
 def _is_project_root(directory: Path, modules_dir: Path | str, classes_dir: Path | str, lib_dir: Path | str) -> bool:
     """Return True if directory contains at least one project structure marker."""
-    return (
-        (directory / classes_dir).is_dir()
-        or (directory / modules_dir).is_dir()
-        or (directory / lib_dir).is_dir()
-    )
+    return (directory / classes_dir).is_dir() or (directory / modules_dir).is_dir() or (directory / lib_dir).is_dir()
 
 
 def find_project_root(
