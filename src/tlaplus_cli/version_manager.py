@@ -6,8 +6,10 @@ import shutil
 import subprocess
 import time
 from dataclasses import asdict, dataclass
+from datetime import UTC, datetime
 from enum import Enum
 from typing import TYPE_CHECKING, Any
+from urllib.parse import urlparse
 
 import requests
 import typer
@@ -20,6 +22,121 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 _SEMVER_RE = re.compile(r"^v?(\d+)\.(\d+)\.(\d+)")
+
+
+def is_url(text: str) -> bool:
+    """Return True if *text* looks like an HTTP(S) URL."""
+    return text.lower().startswith(("http://", "https://"))
+
+
+def extract_version_from_url(url: str) -> str | None:
+    """Scan URL path segments for a semver-like segment (e.g. 'v1.8.0').
+
+    Returns the first matching segment, or None if none is found.
+    """
+    path = urlparse(url).path
+    for segment in path.split("/"):
+        if _SEMVER_RE.match(segment):
+            return segment
+    return None
+
+
+def _utc_now_iso() -> str:
+    """Return the current UTC time in ISO 8601 format, e.g. '2026-04-06T12:51:28Z'."""
+    now = datetime.now(tz=UTC)
+    return now.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def download_version_from_url(url: str) -> Path:
+    """Download tla2tools.jar from *url* and store it in a timestamped version directory.
+
+    The version name is extracted from URL path segments.  The tag (directory suffix) is
+    the ISO 8601 download timestamp.
+
+    Raises:
+        ValueError: if no semver segment can be found in the URL.
+    """
+    version_name = extract_version_from_url(url)
+    if version_name is None:
+        msg = (
+            'could not extract a version name from the URL. '
+            'The URL must contain a version segment (e.g. "v1.8.0").'
+        )
+        raise ValueError(msg)
+
+    tag = _utc_now_iso()
+    tools_dir = get_tools_dir()
+    version_dir = tools_dir / f"{version_name}-{tag}"
+    version_dir.mkdir(parents=True, exist_ok=True)
+    jar_path = version_dir / "tla2tools.jar"
+
+    try:
+        response = requests.get(
+            url,
+            stream=True,
+            timeout=30,
+            headers={"User-Agent": "tlaplus-cli"},
+        )
+        response.raise_for_status()
+        total = int(response.headers.get("content-length", 0))
+
+        with Progress(
+            "[progress.description]{task.description}",
+            BarColumn(),
+            DownloadColumn(),
+            TransferSpeedColumn(),
+        ) as progress:
+            task = progress.add_task(f"Downloading {version_name}...", total=total or None)
+            with jar_path.open("wb") as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    f.write(chunk)
+                    progress.update(task, advance=len(chunk))
+    except Exception:
+        shutil.rmtree(version_dir, ignore_errors=True)
+        raise
+
+    write_version_metadata_from_url(version_dir, version_name=version_name, tag=tag, url=url)
+    return version_dir
+
+
+def write_version_metadata_from_url(
+    version_dir: Path,
+    *,
+    version_name: str,
+    tag: str,
+    url: str,
+) -> None:
+    """Write meta-tla2tools.json for a URL-sourced install."""
+    tlc2_version_string = ""
+    try:
+        result = subprocess.run(
+            ["java", "-cp", "tla2tools.jar", "tlc2.TLC", "-version"],
+            cwd=version_dir,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if result.stdout:
+            tlc2_version_string = result.stdout.strip().split("\n")[0]
+    except Exception as e:
+        typer.echo(f"Warning: Failed to extract TLC version string: {e}", err=True)
+
+    meta_file = version_dir / "meta-tla2tools.json"
+    metadata = {
+        "tag_name": version_name,
+        "sha": "",
+        "published_at": "",
+        "tlc2_version_string": tlc2_version_string,
+        "prerelease": False,
+        "download_url": url,
+        "tag": tag,
+    }
+
+    try:
+        with meta_file.open("w") as f:
+            json.dump(metadata, f, indent=2)
+    except Exception as e:
+        typer.echo(f"Warning: Failed to write metadata: {e}", err=True)
 
 
 def _parse_semver(name: str) -> tuple[int, int, int] | None:
@@ -173,7 +290,8 @@ def list_local_versions() -> list[LocalVersion]:
     result = []
     for d in tools_dir.iterdir():
         if d.is_dir() and not d.is_symlink():
-            parts = d.name.rsplit("-", 1)
+            # Split on the FIRST hyphen so timestamp suffixes are preserved whole
+            parts = d.name.split("-", 1)
             if len(parts) == 2:
                 result.append(LocalVersion(name=parts[0], short_sha=parts[1], path=d))
     return result

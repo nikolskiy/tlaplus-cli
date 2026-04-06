@@ -12,9 +12,11 @@ from tlaplus_cli.version_manager import (
     clear_cache,
     clear_pin,
     download_version,
+    download_version_from_url,
     fetch_remote_versions,
     get_pinned_version_dir,
     get_tools_dir,
+    is_url,
     list_local_versions,
     read_version_metadata,
     resolve_latest_version,
@@ -100,6 +102,25 @@ def install(
     version: str = typer.Argument(None),
     force: bool = typer.Option(False, "--force", "-f", help="Force re-download even if already installed."),
 ) -> None:
+    # --- URL install branch ---
+    if version and is_url(version):
+        try:
+            version_dir = download_version_from_url(version)
+            typer.echo("Download complete.")
+        except ValueError as e:
+            typer.echo(f"Error: {e}", err=True)
+            raise typer.Exit(1) from e
+        except Exception as e:
+            typer.echo(f"Error: Failed to download: {e}", err=True)
+            raise typer.Exit(1) from e
+
+        pinned_dir = get_pinned_version_dir()
+        if pinned_dir is None:
+            typer.echo(f"Auto-pinning newly installed version {version_dir.name}")
+            set_pin(version_dir)
+        return
+    # --- end URL branch ---
+
     config = load_config()
     versions, _ = fetch_remote_versions(config.tla.urls.tags, config.tla.urls.releases, config.tla.urls.per_page)
     if not versions:

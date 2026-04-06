@@ -7,6 +7,7 @@ import pytest
 from typer.testing import CliRunner
 
 from tlaplus_cli.cli import app
+from tlaplus_cli.version_manager import download_version_from_url
 
 runner = CliRunner()
 
@@ -634,3 +635,196 @@ def test_uninstall_all_flag(mock_cache):
     assert result.exit_code == 0
     assert not v1.exists()
     assert not v2.exists()
+
+
+# ---------------------------------------------------------------------------
+# Custom URL install — unit tests for download_version_from_url
+# ---------------------------------------------------------------------------
+
+def test_download_version_from_url_creates_dir(mocker, mock_cache):
+    """A valid URL creates the expected version directory."""
+
+    url = "https://example.com/v1.9.0/tla2tools.jar"
+    fake_ts = "2026-04-06T12:51:28Z"
+
+    mocker.patch("tlaplus_cli.version_manager._utc_now_iso", return_value=fake_ts)
+    mock_response = mocker.MagicMock()
+    mock_response.raise_for_status = mocker.MagicMock()
+    mock_response.headers = {"content-length": "16"}
+    mock_response.iter_content.return_value = [b"fake jar content"]
+    mocker.patch("tlaplus_cli.version_manager.requests.get", return_value=mock_response)
+    mocker.patch("tlaplus_cli.version_manager.write_version_metadata_from_url")
+
+    result_dir = download_version_from_url(url)
+    tools_dir = mock_cache / "tools"
+    assert result_dir == tools_dir / f"v1.9.0-{fake_ts}"
+    assert result_dir.exists()
+
+
+def test_download_version_from_url_writes_jar(mocker, mock_cache):
+    """The jar file is written into the version directory."""
+
+    url = "https://example.com/v1.9.0/tla2tools.jar"
+    fake_ts = "2026-04-06T12:51:28Z"
+    mocker.patch("tlaplus_cli.version_manager._utc_now_iso", return_value=fake_ts)
+    mock_response = mocker.MagicMock()
+    mock_response.raise_for_status = mocker.MagicMock()
+    mock_response.headers = {"content-length": "16"}
+    mock_response.iter_content.return_value = [b"fake jar content"]
+    mocker.patch("tlaplus_cli.version_manager.requests.get", return_value=mock_response)
+    mocker.patch("tlaplus_cli.version_manager.write_version_metadata_from_url")
+
+    result_dir = download_version_from_url(url)
+    jar = result_dir / "tla2tools.jar"
+    assert jar.exists()
+    assert jar.read_bytes() == b"fake jar content"
+
+
+def test_download_version_from_url_no_version_raises(mocker, mock_cache):
+    """A URL with no semver segment raises ValueError."""
+
+    url = "https://example.com/latest/tla2tools.jar"
+    with pytest.raises(ValueError, match="version"):
+        download_version_from_url(url)
+
+
+def test_download_version_from_url_cleans_up_on_failure(mocker, mock_cache):
+    """The version directory is removed if the download fails."""
+
+    url = "https://example.com/v1.9.0/tla2tools.jar"
+    fake_ts = "2026-04-06T12:51:28Z"
+    mocker.patch("tlaplus_cli.version_manager._utc_now_iso", return_value=fake_ts)
+    mocker.patch(
+        "tlaplus_cli.version_manager.requests.get",
+        side_effect=Exception("network error"),
+    )
+
+    with pytest.raises(Exception, match="network error"):
+        download_version_from_url(url)
+
+    tools_dir = mock_cache / "tools"
+    version_dir = tools_dir / f"v1.9.0-{fake_ts}"
+    assert not version_dir.exists()
+
+
+# ---------------------------------------------------------------------------
+# Custom URL install — CLI integration tests
+# ---------------------------------------------------------------------------
+
+def test_install_from_url_success(mock_cache, mock_load_config, mocker):
+    """Installing from a valid URL echoes 'Download complete' and auto-pins."""
+    url = "https://example.com/v1.9.0/tla2tools.jar"
+    fake_ts = "2026-04-06T12:51:28Z"
+
+    def _fake_download_url(u):
+        tools_dir = mock_cache / "tools"
+        version_dir = tools_dir / f"v1.9.0-{fake_ts}"
+        version_dir.mkdir(parents=True, exist_ok=True)
+        (version_dir / "tla2tools.jar").write_bytes(b"jar")
+        return version_dir
+
+    mocker.patch(
+        "tlaplus_cli.tools_manager.download_version_from_url",
+        side_effect=_fake_download_url,
+    )
+
+    result = runner.invoke(app, ["tools", "install", url])
+    assert result.exit_code == 0
+    assert "Download complete" in result.stdout
+    assert "Auto-pinning" in result.stdout
+
+    pin_file = mock_cache / "tools" / "tools-pinned-version.txt"
+    assert pin_file.read_text().strip() == f"v1.9.0-{fake_ts}"
+
+
+def test_install_from_url_no_version_segment(mock_cache, mock_load_config, mocker):
+    """A URL without a semver segment prints an error and exits with code 1."""
+    url = "https://example.com/latest/tla2tools.jar"
+
+    mocker.patch(
+        "tlaplus_cli.tools_manager.download_version_from_url",
+        side_effect=ValueError(
+            'could not extract a version name from the URL. '
+            'The URL must contain a version segment (e.g. "v1.8.0").'
+        ),
+    )
+
+    result = runner.invoke(app, ["tools", "install", url])
+    assert result.exit_code == 1
+    assert "could not extract a version name" in result.output
+
+
+def test_install_from_url_does_not_move_existing_pin(mock_cache, mock_load_config, mocker):
+    """URL install does NOT auto-pin when a pin already exists."""
+    tools_dir = mock_cache / "tools"
+    tools_dir.mkdir(parents=True, exist_ok=True)
+    pin_file = tools_dir / "tools-pinned-version.txt"
+    pin_file.write_text("v1.8.0-aaaaaaa")
+    (tools_dir / "v1.8.0-aaaaaaa").mkdir()
+
+    url = "https://example.com/v1.9.0/tla2tools.jar"
+    fake_ts = "2026-04-06T12:51:28Z"
+
+    def _fake_download_url(u):
+        version_dir = tools_dir / f"v1.9.0-{fake_ts}"
+        version_dir.mkdir(parents=True, exist_ok=True)
+        (version_dir / "tla2tools.jar").write_bytes(b"jar")
+        return version_dir
+
+    mocker.patch(
+        "tlaplus_cli.tools_manager.download_version_from_url",
+        side_effect=_fake_download_url,
+    )
+
+    result = runner.invoke(app, ["tools", "install", url])
+    assert result.exit_code == 0
+    assert pin_file.read_text().strip() == "v1.8.0-aaaaaaa"
+    assert "Auto-pinning" not in result.stdout
+
+
+def test_install_from_url_network_error(mock_cache, mock_load_config, mocker):
+    """A network error during URL download prints the error and exits with code 1."""
+    url = "https://example.com/v1.9.0/tla2tools.jar"
+
+    mocker.patch(
+        "tlaplus_cli.tools_manager.download_version_from_url",
+        side_effect=Exception("connection refused"),
+    )
+
+    result = runner.invoke(app, ["tools", "install", url])
+    assert result.exit_code == 1
+    assert "Failed to download" in result.output
+
+
+def test_list_shows_url_installed_version(mock_github_api, mock_cache, mock_load_config):
+    """URL-installed version (timestamp tag) appears correctly in tla tools list."""
+    tools_dir = mock_cache / "tools"
+    tools_dir.mkdir(parents=True, exist_ok=True)
+
+    ts = "2026-04-06T12:51:28Z"
+    url_dir = tools_dir / f"v1.9.0-{ts}"
+    url_dir.mkdir()
+    (url_dir / "tla2tools.jar").write_bytes(b"jar")
+
+    result = runner.invoke(app, ["tools", "list"])
+    assert result.exit_code == 0
+    assert "v1.9.0" in result.stdout
+    assert ts in result.stdout
+    assert "local only" in result.stdout
+
+
+def test_meta_sync_skips_url_installed_version(mock_github_api, mock_cache, mock_load_config, mocker):
+    """meta sync gracefully skips versions not found in the remote list."""
+    tools_dir = mock_cache / "tools"
+    tools_dir.mkdir(parents=True, exist_ok=True)
+
+    ts = "2026-04-06T12:51:28Z"
+    url_dir = tools_dir / f"v1.9.0-{ts}"
+    url_dir.mkdir()
+    (url_dir / "tla2tools.jar").write_bytes(b"jar")
+
+    mocker.patch("tlaplus_cli.tools_manager.write_version_metadata")
+
+    result = runner.invoke(app, ["tools", "meta", "sync"])
+    assert result.exit_code == 0
+    assert "Could not find remote data for v1.9.0" in result.output

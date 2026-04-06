@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.3.4] - 2026-04-06
+
+### Added
+- `tla tools install <URL>` — install `tla2tools.jar` from a custom HTTPS URL.
+  The version name is extracted from the URL path (e.g. `/v1.8.0/`); the
+  download timestamp (ISO 8601) is used as the tag.  Duplicate installs of the
+  same version are allowed and distinguished by their tag.  The install appears
+  identically in `tla tools list`.
+
 ## [0.3.3] - 2026-04-06
 
 ### Fixed
