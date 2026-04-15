@@ -58,10 +58,7 @@ def download_version_from_url(url: str) -> Path:
     """
     version_name = extract_version_from_url(url)
     if version_name is None:
-        msg = (
-            'could not extract a version name from the URL. '
-            'The URL must contain a version segment (e.g. "v1.8.0").'
-        )
+        msg = 'could not extract a version name from the URL. The URL must contain a version segment (e.g. "v1.8.0").'
         raise ValueError(msg)
 
     tag = _utc_now_iso()
@@ -419,7 +416,8 @@ def _fetch_from_api(
         releases_response = requests.get(releases_url, params=params, timeout=10)
         releases_response.raise_for_status()
         releases_data: list[dict[str, Any]] = releases_response.json()
-    except requests.RequestException:
+    except Exception as e:
+        typer.echo(f"⚠ Warning: Failed to fetch remote versions: {e}", err=True)
         return None
     else:
         return tags_data, releases_data

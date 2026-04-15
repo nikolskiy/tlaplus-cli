@@ -1,10 +1,7 @@
 import pytest
 import typer
-from typer.testing import CliRunner
 
 from tlaplus_cli.cli import app, version_callback
-
-runner = CliRunner()
 
 
 def test_version_callback_exits(mocker):
@@ -22,7 +19,7 @@ def test_version_callback_exits(mocker):
     mock_metadata.assert_called_once_with("tlaplus-cli")
 
 
-def test_cli_version_flag(mocker):
+def test_cli_version_flag(mocker, runner):
     """Test 'tla --version' command."""
     mock_metadata = mocker.patch("importlib.metadata.metadata")
     mock_metadata.return_value = {

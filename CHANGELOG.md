@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+- Reorganized and improved tests. 
+
 ## [0.3.4] - 2026-04-06
 
 ### Added

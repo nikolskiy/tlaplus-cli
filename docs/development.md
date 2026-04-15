@@ -61,6 +61,22 @@ inside the test scope so Typer's `CliRunner` operates in isolation and never tou
 `tla tools meta sync`), patch out the heavy I/O helpers with `mocker.patch(...)` and assert on
 `call_args` directly instead of validating filesystem side effects.
 
+**Advanced Testing Patterns:**
+
+- **Fixture Centralization:** Consolidate shared resources (CLI runners, cache stubs, version factories) in the root `tests/conftest.py`. This ensures a single source of truth for mocks across all sub-suites.
+- **Defensive Settings Mutation:** When using a shared `Settings` fixture, always use `base_settings.model_copy(deep=True)` before modifying values. This prevents state leakage between tests.
+- **Parametrization:** Prefer `@pytest.mark.parametrize` for functions with multiple edge cases (e.g., URL parsing, version resolution) to reduce code bulk and improve coverage visibility.
+- **Mocking Interactive Prompts:** To test interactive CLI flows, patch `typer.prompt` or `typer.confirm`:
+  ```python
+  mocker.patch("typer.prompt", return_value=1) # Select second option in a menu
+  ```
+- **Cleanup Validation:** Every function that creates transient files or directories (like `download_version`) must have an accompanying test verifying that those resources are removed on failure (e.g., using `shutil.rmtree` in a `try...except` block).
+- **Patch Target Precision:** Patch dependencies in the module they are consumed.
+  ```python
+  # Correct: Patching subprocess as seen by version_manager
+  mocker.patch("tlaplus_cli.version_manager.subprocess.run")
+  ```
+
 **Unused unpacked variables:** Suppress `RUF059` warnings by using underscores for intentionally
 ignored tuple members:
 
