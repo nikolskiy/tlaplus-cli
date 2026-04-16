@@ -48,6 +48,19 @@ vars == <<configExists, installedVersions, pinnedVersion, legacyJarExists,
           javaInstalled, javaMajorVersion,
           hasModulesDir, hasClassesDir, lastResult>>
 
+\* ----------------------------------------------------------------
+\* Variable Groups for UNCHANGED simplification
+\* ----------------------------------------------------------------
+configVars    == <<configExists>>
+versionVars   == <<installedVersions, pinnedVersion>>
+legacyVars    == <<legacyJarExists>>
+cacheVars     == <<cacheState, cachedVersions>>
+apiVars       == <<apiAvailable>>
+javaVars      == <<javaInstalled, javaMajorVersion>>
+workspaceVars == <<hasModulesDir, hasClassesDir>>
+stateVars     == <<configVars, versionVars, legacyVars, cacheVars, apiVars, javaVars, workspaceVars>>
+
+
 MC_RemoteSHAs ==
     "v1" :> "sha_a" @@ "v2" :> "sha_b"
 
@@ -135,10 +148,7 @@ Init ==
 EnsureConfig ==
     /\ ~configExists
     /\ configExists' = TRUE
-    /\ UNCHANGED <<installedVersions, pinnedVersion, legacyJarExists,
-                   cacheState, cachedVersions, apiAvailable,
-                   javaInstalled, javaMajorVersion,
-                   hasModulesDir, hasClassesDir, lastResult>>
+    /\ UNCHANGED <<versionVars, legacyVars, cacheVars, apiVars, javaVars, workspaceVars, lastResult>>
 
 (* ================================================================
    ACTION: FetchRemoteVersions
@@ -150,10 +160,7 @@ FetchRemoteVersions_CacheHit ==
     /\ cacheState = "fresh"
     /\ cachedVersions /= {}
     /\ lastResult' = "ok"
-    /\ UNCHANGED <<configExists, installedVersions, pinnedVersion,
-                   legacyJarExists, cacheState, cachedVersions,
-                   apiAvailable, javaInstalled, javaMajorVersion,
-                   hasModulesDir, hasClassesDir>>
+    /\ UNCHANGED stateVars
 
 FetchRemoteVersions_ApiSuccess ==
     \* Cache miss or stale, API succeeds
@@ -162,10 +169,7 @@ FetchRemoteVersions_ApiSuccess ==
     /\ cacheState' = "fresh"
     /\ cachedVersions' = Versions
     /\ lastResult' = "ok"
-    /\ UNCHANGED <<configExists, installedVersions, pinnedVersion,
-                   legacyJarExists, apiAvailable,
-                   javaInstalled, javaMajorVersion,
-                   hasModulesDir, hasClassesDir>>
+    /\ UNCHANGED <<configVars, versionVars, legacyVars, apiVars, javaVars, workspaceVars>>
 
 FetchRemoteVersions_StaleCache ==
     \* API fails, but stale cache exists
@@ -174,20 +178,14 @@ FetchRemoteVersions_StaleCache ==
     /\ cacheState = "stale"
     /\ cachedVersions /= {}
     /\ lastResult' = "ok"
-    /\ UNCHANGED <<configExists, installedVersions, pinnedVersion,
-                   legacyJarExists, cacheState, cachedVersions,
-                   apiAvailable, javaInstalled, javaMajorVersion,
-                   hasModulesDir, hasClassesDir>>
+    /\ UNCHANGED stateVars
 
 FetchRemoteVersions_Unavailable ==
     \* API fails and no cache at all
     /\ ~apiAvailable
     /\ cacheState = "empty"
     /\ lastResult' = "error_unavailable"
-    /\ UNCHANGED <<configExists, installedVersions, pinnedVersion,
-                   legacyJarExists, cacheState, cachedVersions,
-                   apiAvailable, javaInstalled, javaMajorVersion,
-                   hasModulesDir, hasClassesDir>>
+    /\ UNCHANGED stateVars
 
 (* ================================================================
    ACTION: InstallVersion(v)
@@ -206,10 +204,7 @@ InstallVersion(v) ==
                            THEN newEntry
                            ELSE pinnedVersion
        /\ lastResult' = "ok"
-       /\ UNCHANGED <<configExists, legacyJarExists,
-                      cacheState, cachedVersions, apiAvailable,
-                      javaInstalled, javaMajorVersion,
-                      hasModulesDir, hasClassesDir>>
+       /\ UNCHANGED <<configVars, legacyVars, cacheVars, apiVars, javaVars, workspaceVars>>
 
 InstallVersionForce(v) ==
     \* Force reinstall of an already-installed version
@@ -224,20 +219,14 @@ InstallVersionForce(v) ==
                            THEN newEntry
                            ELSE pinnedVersion
        /\ lastResult' = "ok"
-       /\ UNCHANGED <<configExists, legacyJarExists,
-                      cacheState, cachedVersions, apiAvailable,
-                      javaInstalled, javaMajorVersion,
-                      hasModulesDir, hasClassesDir>>
+       /\ UNCHANGED <<configVars, legacyVars, cacheVars, apiVars, javaVars, workspaceVars>>
 
 InstallVersionNotFound(v) ==
     \* Version not in remote repository
     /\ configExists
     /\ v \notin AvailableRemoteVersions
     /\ lastResult' = "error_not_found"
-    /\ UNCHANGED <<configExists, installedVersions, pinnedVersion,
-                   legacyJarExists, cacheState, cachedVersions,
-                   apiAvailable, javaInstalled, javaMajorVersion,
-                   hasModulesDir, hasClassesDir>>
+    /\ UNCHANGED stateVars
 
 InstallFromURL ==
     \* URL-based install branch (custom URL)
@@ -251,10 +240,7 @@ InstallFromURL ==
                            THEN newEntry
                            ELSE pinnedVersion
        /\ lastResult' = "ok"
-       /\ UNCHANGED <<configExists, legacyJarExists,
-                      cacheState, cachedVersions, apiAvailable,
-                      javaInstalled, javaMajorVersion,
-                      hasModulesDir, hasClassesDir>>
+       /\ UNCHANGED <<configVars, legacyVars, cacheVars, apiVars, javaVars, workspaceVars>>
 
 (* ================================================================
    ACTION: UninstallVersion(v)
@@ -276,29 +262,20 @@ UninstallVersion(v) ==
                  ELSE NoneVersion
             ELSE pinnedVersion
        /\ lastResult' = "ok"
-       /\ UNCHANGED <<configExists, legacyJarExists,
-                      cacheState, cachedVersions, apiAvailable,
-                      javaInstalled, javaMajorVersion,
-                      hasModulesDir, hasClassesDir>>
+       /\ UNCHANGED <<configVars, legacyVars, cacheVars, apiVars, javaVars, workspaceVars>>
 
 UninstallLegacy ==
     \* tla tools uninstall default
     /\ legacyJarExists
     /\ legacyJarExists' = FALSE
     /\ lastResult' = "ok"
-    /\ UNCHANGED <<configExists, installedVersions, pinnedVersion,
-                   cacheState, cachedVersions, apiAvailable,
-                   javaInstalled, javaMajorVersion,
-                   hasModulesDir, hasClassesDir>>
+    /\ UNCHANGED <<configVars, versionVars, cacheVars, apiVars, javaVars, workspaceVars>>
 
 UninstallNotInstalled(v) ==
     /\ configExists
     /\ ~IsInstalled(v)
     /\ lastResult' = "error_not_found"
-    /\ UNCHANGED <<configExists, installedVersions, pinnedVersion,
-                   legacyJarExists, cacheState, cachedVersions,
-                   apiAvailable, javaInstalled, javaMajorVersion,
-                   hasModulesDir, hasClassesDir>>
+    /\ UNCHANGED stateVars
 
 (* ================================================================
    ACTION: UpgradeVersion(v)
@@ -319,10 +296,7 @@ UpgradeVersion(v) ==
           /\ installedVersions' = (installedVersions \ {oldEntry}) \cup {newEntry}
           /\ pinnedVersion' = IF wasPinned THEN newEntry ELSE pinnedVersion
           /\ lastResult' = "ok"
-          /\ UNCHANGED <<configExists, legacyJarExists,
-                         cacheState, cachedVersions, apiAvailable,
-                         javaInstalled, javaMajorVersion,
-                         hasModulesDir, hasClassesDir>>
+          /\ UNCHANGED <<configVars, legacyVars, cacheVars, apiVars, javaVars, workspaceVars>>
 
 UpgradeAlreadyCurrent(v) ==
     \* Version already at latest SHA
@@ -332,10 +306,7 @@ UpgradeAlreadyCurrent(v) ==
     /\ LET oldEntry == CHOOSE iv \in installedVersions : iv.name = v
        IN oldEntry.sha = RemoteSHAs[v]
     /\ lastResult' = "ok"
-    /\ UNCHANGED <<configExists, installedVersions, pinnedVersion,
-                   legacyJarExists, cacheState, cachedVersions,
-                   apiAvailable, javaInstalled, javaMajorVersion,
-                   hasModulesDir, hasClassesDir>>
+    /\ UNCHANGED stateVars
 
 UpgradeNotInstalled(v) ==
     \* Upgrade fallback: version not local → triggers install
@@ -349,10 +320,7 @@ UpgradeNotInstalled(v) ==
                            THEN newEntry
                            ELSE pinnedVersion
        /\ lastResult' = "ok"
-       /\ UNCHANGED <<configExists, legacyJarExists,
-                      cacheState, cachedVersions, apiAvailable,
-                      javaInstalled, javaMajorVersion,
-                      hasModulesDir, hasClassesDir>>
+       /\ UNCHANGED <<configVars, legacyVars, cacheVars, apiVars, javaVars, workspaceVars>>
 
 (* ================================================================
    ACTION: PinVersion(v)
@@ -365,19 +333,13 @@ PinVersion(v) ==
     /\ LET target == CHOOSE iv \in installedVersions : iv.name = v
        IN pinnedVersion' = target
     /\ lastResult' = "ok"
-    /\ UNCHANGED <<configExists, installedVersions, legacyJarExists,
-                   cacheState, cachedVersions, apiAvailable,
-                   javaInstalled, javaMajorVersion,
-                   hasModulesDir, hasClassesDir>>
+    /\ UNCHANGED <<configVars, legacyVars, cacheVars, apiVars, javaVars, workspaceVars, installedVersions>>
 
 PinVersionNotInstalled(v) ==
     /\ configExists
     /\ ~IsInstalled(v)
     /\ lastResult' = "error_not_found"
-    /\ UNCHANGED <<configExists, installedVersions, pinnedVersion,
-                   legacyJarExists, cacheState, cachedVersions,
-                   apiAvailable, javaInstalled, javaMajorVersion,
-                   hasModulesDir, hasClassesDir>>
+    /\ UNCHANGED stateVars
 
 (* ================================================================
    ACTION: ClearCache
@@ -388,10 +350,7 @@ ClearCache ==
     /\ cacheState' = "empty"
     /\ cachedVersions' = {}
     /\ lastResult' = "ok"
-    /\ UNCHANGED <<configExists, installedVersions, pinnedVersion,
-                   legacyJarExists, apiAvailable,
-                   javaInstalled, javaMajorVersion,
-                   hasModulesDir, hasClassesDir>>
+    /\ UNCHANGED <<configVars, versionVars, legacyVars, apiVars, javaVars, workspaceVars>>
 
 (* ================================================================
    ACTION: CacheExpires
@@ -400,10 +359,7 @@ ClearCache ==
 CacheExpires ==
     /\ cacheState = "fresh"
     /\ cacheState' = "stale"
-    /\ UNCHANGED <<configExists, installedVersions, pinnedVersion,
-                   legacyJarExists, cachedVersions, apiAvailable,
-                   javaInstalled, javaMajorVersion,
-                   hasModulesDir, hasClassesDir, lastResult>>
+    /\ UNCHANGED <<configVars, versionVars, legacyVars, apiVars, javaVars, workspaceVars, lastResult, cachedVersions>>
 
 (* ================================================================
    ACTION: RunTLC
@@ -416,43 +372,32 @@ RunTLC_Success ==
     /\ JavaCompatible
     /\ JarAvailable
     /\ lastResult' = "ok"
-    /\ UNCHANGED <<configExists, installedVersions, pinnedVersion,
-                   legacyJarExists, cacheState, cachedVersions,
-                   apiAvailable, javaInstalled, javaMajorVersion,
-                   hasModulesDir, hasClassesDir>>
+    /\ UNCHANGED stateVars
 
 RunTLC_NoJava ==
     /\ configExists
     /\ ~javaInstalled
     /\ lastResult' = "error_no_java"
-    /\ UNCHANGED <<configExists, installedVersions, pinnedVersion,
-                   legacyJarExists, cacheState, cachedVersions,
-                   apiAvailable, javaInstalled, javaMajorVersion,
-                   hasModulesDir, hasClassesDir>>
+    /\ UNCHANGED stateVars
 
 RunTLC_JavaTooOld ==
     /\ configExists
     /\ javaInstalled
     /\ javaMajorVersion < 11
     /\ lastResult' = "error_java_version"
-    /\ UNCHANGED <<configExists, installedVersions, pinnedVersion,
-                   legacyJarExists, cacheState, cachedVersions,
-                   apiAvailable, javaInstalled, javaMajorVersion,
-                   hasModulesDir, hasClassesDir>>
+    /\ UNCHANGED stateVars
 
 RunTLC_NoJar ==
     /\ configExists
     /\ JavaCompatible
     /\ ~JarAvailable
     /\ lastResult' = "error_no_jar"
-    /\ UNCHANGED <<configExists, installedVersions, pinnedVersion,
-                   legacyJarExists, cacheState, cachedVersions,
-                   apiAvailable, javaInstalled, javaMajorVersion,
-                   hasModulesDir, hasClassesDir>>
+    /\ UNCHANGED stateVars
 
 (* ================================================================
    ACTION: BuildModules
-   Corresponds to: build_tlc_module.build()
+   Corresponds to: tla modules <subcommand>
+   Related code: build_tlc_module.py
    Compiles custom Java TLC modules.
    ================================================================ *)
 BuildModules_Success ==
@@ -461,29 +406,20 @@ BuildModules_Success ==
     /\ hasModulesDir
     /\ lastResult' = "ok"
     /\ hasClassesDir' = TRUE  \* classes/ created by build
-    /\ UNCHANGED <<configExists, installedVersions, pinnedVersion,
-                   legacyJarExists, cacheState, cachedVersions,
-                   apiAvailable, javaInstalled, javaMajorVersion,
-                   hasModulesDir>>
+    /\ UNCHANGED <<configVars, versionVars, legacyVars, cacheVars, apiVars, javaVars, hasModulesDir>>
 
 BuildModules_NoJar ==
     /\ configExists
     /\ ~JarAvailable
     /\ lastResult' = "error_no_jar"
-    /\ UNCHANGED <<configExists, installedVersions, pinnedVersion,
-                   legacyJarExists, cacheState, cachedVersions,
-                   apiAvailable, javaInstalled, javaMajorVersion,
-                   hasModulesDir, hasClassesDir>>
+    /\ UNCHANGED stateVars
 
 BuildModules_NoModulesDir ==
     /\ configExists
     /\ JarAvailable
     /\ ~hasModulesDir
     /\ lastResult' = "error_no_modules_dir"
-    /\ UNCHANGED <<configExists, installedVersions, pinnedVersion,
-                   legacyJarExists, cacheState, cachedVersions,
-                   apiAvailable, javaInstalled, javaMajorVersion,
-                   hasModulesDir, hasClassesDir>>
+    /\ UNCHANGED stateVars
 
 (* ================================================================
    ACTION: CheckJava
@@ -493,29 +429,20 @@ CheckJava_OK ==
     /\ configExists
     /\ JavaCompatible
     /\ lastResult' = "ok"
-    /\ UNCHANGED <<configExists, installedVersions, pinnedVersion,
-                   legacyJarExists, cacheState, cachedVersions,
-                   apiAvailable, javaInstalled, javaMajorVersion,
-                   hasModulesDir, hasClassesDir>>
+    /\ UNCHANGED stateVars
 
 CheckJava_Missing ==
     /\ configExists
     /\ ~javaInstalled
     /\ lastResult' = "error_no_java"
-    /\ UNCHANGED <<configExists, installedVersions, pinnedVersion,
-                   legacyJarExists, cacheState, cachedVersions,
-                   apiAvailable, javaInstalled, javaMajorVersion,
-                   hasModulesDir, hasClassesDir>>
+    /\ UNCHANGED stateVars
 
 CheckJava_TooOld ==
     /\ configExists
     /\ javaInstalled
     /\ javaMajorVersion < 11
     /\ lastResult' = "error_java_version"
-    /\ UNCHANGED <<configExists, installedVersions, pinnedVersion,
-                   legacyJarExists, cacheState, cachedVersions,
-                   apiAvailable, javaInstalled, javaMajorVersion,
-                   hasModulesDir, hasClassesDir>>
+    /\ UNCHANGED stateVars
 
 (* ================================================================
    ACTION: ApiToggle
@@ -524,18 +451,12 @@ CheckJava_TooOld ==
 ApiGoesDown ==
     /\ apiAvailable
     /\ apiAvailable' = FALSE
-    /\ UNCHANGED <<configExists, installedVersions, pinnedVersion,
-                   legacyJarExists, cacheState, cachedVersions,
-                   javaInstalled, javaMajorVersion,
-                   hasModulesDir, hasClassesDir, lastResult>>
+    /\ UNCHANGED <<configVars, versionVars, legacyVars, cacheVars, javaVars, workspaceVars, lastResult>>
 
 ApiComesUp ==
     /\ ~apiAvailable
     /\ apiAvailable' = TRUE
-    /\ UNCHANGED <<configExists, installedVersions, pinnedVersion,
-                   legacyJarExists, cacheState, cachedVersions,
-                   javaInstalled, javaMajorVersion,
-                   hasModulesDir, hasClassesDir, lastResult>>
+    /\ UNCHANGED <<configVars, versionVars, legacyVars, cacheVars, javaVars, workspaceVars, lastResult>>
 
 (* ================================================================
    NEXT STATE RELATION
