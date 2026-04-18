@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+
+## [0.3.5] - 2026-04-19
+
 ### Added
 - `tla modules path <PATH>` — configure a persistent custom Java modules path. This decouples module compilation and execution from the current working directory.
 
