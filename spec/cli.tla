@@ -142,7 +142,8 @@ Init ==
 
 (* ================================================================
    ACTION: EnsureConfig
-   Corresponds to: config.load_config() -> _ensure_config()
+   Corresponds to: Implicit execution on any command (via load_config)
+   Related code: config.py
    First command invocation triggers config copy if missing.
    ================================================================ *)
 EnsureConfig ==
@@ -152,8 +153,9 @@ EnsureConfig ==
 
 (* ================================================================
    ACTION: FetchRemoteVersions
-   Corresponds to: version_manager.fetch_remote_versions()
-   Models the three-tier fetch strategy: fresh cache → API → stale cache → empty
+   Corresponds to: Internal execution during tools commands (list, install, upgrade)
+   Related code: version_manager.py
+   Models the three-tier fetch strategy: fresh cache → API → stale cache → empty.
    ================================================================ *)
 FetchRemoteVersions_CacheHit ==
     \* Cache is fresh (< 1 hour old)
@@ -188,8 +190,9 @@ FetchRemoteVersions_Unavailable ==
     /\ UNCHANGED stateVars
 
 (* ================================================================
-   ACTION: InstallVersion(v)
-   Corresponds to: tools_manager.install()
+   ACTION: InstallVersion
+   Corresponds to: tla tools install <version>
+   Related code: tools_manager.py
    Installs a specific remote version. Auto-pins if nothing pinned.
    ================================================================ *)
 InstallVersion(v) ==
@@ -243,8 +246,9 @@ InstallFromURL ==
        /\ UNCHANGED <<configVars, legacyVars, cacheVars, apiVars, javaVars, workspaceVars>>
 
 (* ================================================================
-   ACTION: UninstallVersion(v)
-   Corresponds to: tools_manager.uninstall()
+   ACTION: UninstallVersion
+   Corresponds to: tla tools uninstall <version>
+   Related code: tools_manager.py
    Removes installed version. If pinned, falls back to latest remaining.
    ================================================================ *)
 UninstallVersion(v) ==
@@ -279,8 +283,9 @@ UninstallNotInstalled(v) ==
     /\ UNCHANGED stateVars
 
 (* ================================================================
-   ACTION: UpgradeVersion(v)
-   Corresponds to: tools_manager.upgrade()
+   ACTION: UpgradeVersion
+   Corresponds to: tla tools upgrade <version>
+   Related code: tools_manager.py
    Re-downloads version if remote SHA differs. Replaces old directory.
    ================================================================ *)
 UpgradeVersion(v) ==
@@ -324,8 +329,9 @@ UpgradeNotInstalled(v) ==
        /\ UNCHANGED <<configVars, legacyVars, cacheVars, apiVars, javaVars, workspaceVars>>
 
 (* ================================================================
-   ACTION: PinVersion(v)
-   Corresponds to: tools_manager.pin()
+   ACTION: PinVersion
+   Corresponds to: tla tools pin <version>
+   Related code: tools_manager.py
    Sets the active pinned version from installed versions.
    ================================================================ *)
 PinVersion(v) ==
@@ -344,7 +350,9 @@ PinVersionNotInstalled(v) ==
 
 (* ================================================================
    ACTION: ClearCache
-   Corresponds to: fetch_cache_app clear
+   Corresponds to: tla fetch-cache clear
+   Related code: tools_manager.py
+   Clears the local GitHub API cache for TLA+ tool versions.
    ================================================================ *)
 ClearCache ==
     /\ cacheState /= "empty"
@@ -355,7 +363,9 @@ ClearCache ==
 
 (* ================================================================
    ACTION: CacheExpires
-   Models the passage of time causing cache to go stale.
+   Corresponds to: Implicit environmental change
+   Related code: version_manager.py
+   Models the passage of time causing the GitHub API cache to go stale.
    ================================================================ *)
 CacheExpires ==
     /\ cacheState = "fresh"
@@ -364,8 +374,9 @@ CacheExpires ==
 
 (* ================================================================
    ACTION: RunTLC
-   Corresponds to: run_tlc.tlc()
-   Models the jar resolution fallback chain and precondition checks.
+   Corresponds to: tla tlc <args>
+   Related code: run_tlc.py
+   Models the jar resolution fallback chain and precondition checks before running TLC.
    ================================================================ *)
 RunTLC_Success ==
     \* Happy path: java ok, jar found via pinned or legacy
@@ -424,7 +435,9 @@ BuildModules_NoModulesDir ==
 
 (* ================================================================
    ACTION: CheckJava
-   Corresponds to: cli.check_java()
+   Corresponds to: tla check-java
+   Related code: check_java.py
+   Checks if Java is installed and meets the minimum version requirement.
    ================================================================ *)
 CheckJava_OK ==
     /\ configExists
@@ -447,7 +460,9 @@ CheckJava_TooOld ==
 
 (* ================================================================
    ACTION: ApiToggle
-   Models the environment changing: API going up/down.
+   Corresponds to: External system state
+   Related code: N/A
+   Models the external environment changing by having the API go up or down.
    ================================================================ *)
 ApiGoesDown ==
     /\ apiAvailable
