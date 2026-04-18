@@ -255,12 +255,13 @@ UninstallVersion(v) ==
            wasPinned == pinnedVersion /= NoneVersion /\ pinnedVersion = target
        IN
        /\ installedVersions' = remaining
-       /\ pinnedVersion' =
-            IF wasPinned
-            THEN IF remaining /= {}
-                 THEN CHOOSE rv \in remaining : TRUE   \* fallback to latest
-                 ELSE NoneVersion
-            ELSE pinnedVersion
+       /\ \/ /\ wasPinned
+             /\ \/ /\ remaining /= {}
+                   /\ pinnedVersion' = CHOOSE rv \in remaining : TRUE   \* fallback to latest
+                \/ /\ remaining = {}
+                   /\ pinnedVersion' = NoneVersion
+          \/ /\ ~wasPinned
+             /\ pinnedVersion' = pinnedVersion
        /\ lastResult' = "ok"
        /\ UNCHANGED <<configVars, legacyVars, cacheVars, apiVars, javaVars, workspaceVars>>
 
