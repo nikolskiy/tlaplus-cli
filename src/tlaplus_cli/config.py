@@ -17,9 +17,29 @@ def load_config() -> Settings:
     Creates a default config on first run.
     """
     cp = _ensure_config()
-    with cp.open() as f:
+    with cp.open(encoding="utf-8") as f:
         data = yaml.safe_load(f)
         return Settings.model_validate(data)
+
+
+def save_config(settings: Settings) -> None:
+    """Save config to the user config directory.
+
+    Uses a defensive deep copy of settings.
+    """
+    cp = config_path()
+    # defensive deep copy as per plan
+    base_settings = settings.model_copy(deep=True)
+
+    # Convert to dict, excluding None values for a cleaner config if desired,
+    # but the plan doesn't specify exclusion. Pydantic's model_dump is good.
+    data = base_settings.model_dump(mode="json")
+
+    with cp.open("w", encoding="utf-8") as f:
+        yaml.safe_dump(data, f, default_flow_style=False)
+
+    # Clear cache to ensure subsequent loads get the new data
+    load_config.cache_clear()
 
 
 def config_dir() -> Path:

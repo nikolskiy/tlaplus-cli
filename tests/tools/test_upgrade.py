@@ -7,9 +7,7 @@ from tlaplus_cli.cli import app
 from tlaplus_cli.tools_manager import _resolve_upgrade_target
 
 
-def test_tlc_upgrade(
-    mock_github_api, mock_download, mock_load_config, mock_cache, make_installed_version, runner
-):
+def test_tlc_upgrade(mock_github_api, mock_download, mock_load_config, mock_cache, make_installed_version, runner):
     # Install an old version with different sha
     old_dir = make_installed_version("v1.8.0", "ccccccc")
     # Pin it
@@ -21,14 +19,10 @@ def test_tlc_upgrade(
     assert not old_dir.exists()
     new_dir = tools_dir / "v1.8.0-aaaaaaa"
     assert new_dir.exists()
-    assert (
-        (tools_dir / "tools-pinned-version.txt").read_text().strip() == "v1.8.0-aaaaaaa"
-    )
+    assert (tools_dir / "tools-pinned-version.txt").read_text().strip() == "v1.8.0-aaaaaaa"
 
 
-def test_tlc_upgrade_already_up_to_date(
-    mock_github_api, mock_cache, mock_load_config, installed_v180, runner
-):
+def test_tlc_upgrade_already_up_to_date(mock_github_api, mock_cache, mock_load_config, installed_v180, runner):
     pin_file = mock_cache / "tools" / "tools-pinned-version.txt"
     pin_file.write_text("v1.8.0-aaaaaaa")
     result = runner.invoke(app, ["tools", "upgrade"])
@@ -36,9 +30,7 @@ def test_tlc_upgrade_already_up_to_date(
     assert "already up to date" in result.stdout
 
 
-def test_upgrade_missing_local_version_triggers_install(
-    mock_github_api, mock_cache, mock_load_config, mocker, runner
-):
+def test_upgrade_missing_local_version_triggers_install(mock_github_api, mock_cache, mock_load_config, mocker, runner):
     """If the target version for upgrade is not found locally, it should trigger an install."""
     # Ensure nothing is installed or pinned
     tools_dir = mock_cache / "tools"

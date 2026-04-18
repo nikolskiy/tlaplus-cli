@@ -46,3 +46,4 @@ class Settings(BaseModel):
     workspace: WorkspaceConfig
     tlc: TlcConfig
     java: JavaConfig = Field(default_factory=JavaConfig)
+    module_path: str | None = None

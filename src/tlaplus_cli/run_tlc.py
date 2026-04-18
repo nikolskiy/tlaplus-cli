@@ -85,6 +85,15 @@ def tlc(
 
     classpath_parts = [str(jar_path)]
     extra_jvm_opts: list[str] = []
+
+    if config.module_path:
+        custom_path = Path(config.module_path)
+        if custom_path.is_dir():
+            # Phase 4: safely append the custom directory path to the Java -cp mechanism
+            classpath_parts.append(str(custom_path))
+            # Also add to TLA-Library for convenience if TLA modules are there
+            extra_jvm_opts.append(f"-DTLA-Library={custom_path}")
+
     if project_root:
         classes_path = project_root / config.workspace.classes_dir
         if classes_path.is_dir():

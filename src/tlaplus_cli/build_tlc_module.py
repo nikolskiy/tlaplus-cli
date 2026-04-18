@@ -6,7 +6,7 @@ from pathlib import Path
 
 import typer
 
-from tlaplus_cli.config import cache_dir, load_config, workspace_root
+from tlaplus_cli.config import cache_dir, load_config, save_config, workspace_root
 from tlaplus_cli.version_manager import get_pinned_version_dir
 
 
@@ -28,9 +28,8 @@ def build(
         typer.echo("Error: tla2tools.jar not found.\nRun 'tla tools install' first.", err=True)
         raise typer.Exit(1)
 
-    modules_dir = base_dir / config.workspace.modules_dir
+    modules_dir = Path(config.module_path) if config.module_path else base_dir / config.workspace.modules_dir
     classes_dir = base_dir / config.workspace.classes_dir
-
     lib_dir = base_dir / "lib"
     lib_jars = sorted(lib_dir.glob("*.jar")) if lib_dir.is_dir() else []
     classpath = os.pathsep.join([str(jar_path)] + [str(j) for j in lib_jars])
@@ -71,3 +70,17 @@ def build(
     except FileNotFoundError:
         typer.echo("Error: 'javac' not found. Ensure JDK is installed and in PATH.", err=True)
         raise typer.Exit(1) from None
+
+
+def set_modules_path(path: str = typer.Argument(..., help="Path to the custom Java modules directory.")) -> None:
+    """Configure a persistent custom Java modules path."""
+    config_obj = load_config()
+    p = Path(path).resolve()
+
+    if not p.is_dir():
+        typer.echo(f"Error: Path does not exist or is not a directory: {p}", err=True)
+        raise typer.Exit(1)
+
+    config_obj.module_path = str(p)
+    save_config(config_obj)
+    typer.echo(f"Modules path updated to: {p}")

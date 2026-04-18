@@ -44,9 +44,7 @@ def test_fetch_remote_versions_uses_cache(mocker, mock_cache, base_settings):
 
     mock_get = mocker.patch("requests.get")
 
-    versions, status = fetch_remote_versions(
-        base_settings.tla.urls.tags, base_settings.tla.urls.releases
-    )
+    versions, status = fetch_remote_versions(base_settings.tla.urls.tags, base_settings.tla.urls.releases)
 
     assert status == FetchStatus.CACHED
     assert len(versions) == 1
@@ -76,9 +74,7 @@ def test_fetch_remote_versions_stale_fallback(mocker, mock_cache, base_settings)
     # Mock API failure
     mocker.patch("requests.get", side_effect=Exception("API down"))
 
-    versions, status = fetch_remote_versions(
-        base_settings.tla.urls.tags, base_settings.tla.urls.releases
-    )
+    versions, status = fetch_remote_versions(base_settings.tla.urls.tags, base_settings.tla.urls.releases)
 
     assert status == FetchStatus.STALE
     assert len(versions) == 1
@@ -93,9 +89,7 @@ def test_fetch_remote_versions_corrupt_cache(mocker, mock_cache, base_settings):
     # Mock API failure to see if it handles corrupt cache during fallback
     mocker.patch("requests.get", side_effect=Exception("API down"))
 
-    versions, status = fetch_remote_versions(
-        base_settings.tla.urls.tags, base_settings.tla.urls.releases
-    )
+    versions, status = fetch_remote_versions(base_settings.tla.urls.tags, base_settings.tla.urls.releases)
 
     assert status == FetchStatus.UNAVAILABLE
     assert versions == []

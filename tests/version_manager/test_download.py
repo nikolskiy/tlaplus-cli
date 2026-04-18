@@ -1,4 +1,3 @@
-
 import pytest
 
 from tlaplus_cli.version_manager import RemoteVersion, download_version

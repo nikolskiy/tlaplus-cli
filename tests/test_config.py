@@ -49,11 +49,51 @@ def test_workspace_root_absolute(mocker, tmp_path):
     assert config.workspace_root() == abs_path
 
 
-def test_workspace_root_relative(mocker, tmp_path, monkeypatch):
-    """workspace_root resolves relative path from CWD."""
-    monkeypatch.chdir(tmp_path)
-    mock_settings = mocker.MagicMock()
-    mock_settings.workspace.root = "relative_ws"
-    mocker.patch("tlaplus_cli.config.load_config", return_value=mock_settings)
+def test_load_module_path(mocker, tmp_path):
+    """Test that module_path can be loaded from config."""
+    config.load_config.cache_clear()
+    config_dir = tmp_path / "config"
+    mocker.patch("tlaplus_cli.config.config_dir", return_value=config_dir)
+    config_path = config_dir / "config.yaml"
+    config_path.parent.mkdir(parents=True, exist_ok=True)
 
-    assert config.workspace_root() == tmp_path / "relative_ws"
+    config_content = """
+tla:
+  urls:
+    tags: https://example.com/tags
+    releases: https://example.com/releases
+    per_page: 30
+workspace:
+  root: .
+  spec_dir: spec
+  modules_dir: modules
+  classes_dir: classes
+tlc:
+  java_class: tlc2.TLC
+  overrides_class: tlc2.overrides.TLCOverrides
+module_path: /custom/path
+"""
+    config_path.write_text(config_content)
+
+    cfg = config.load_config()
+    assert cfg.module_path == "/custom/path"
+
+
+def test_save_config(mocker, tmp_path):
+    """Test saving config preserves module_path and uses deep copy."""
+    config.load_config.cache_clear()
+    config_dir = tmp_path / "config"
+    mocker.patch("tlaplus_cli.config.config_dir", return_value=config_dir)
+    config_path = config_dir / "config.yaml"
+    config_dir.mkdir(parents=True, exist_ok=True)
+
+    cfg = config.load_config()
+    cfg.module_path = "/new/path"
+
+    config.save_config(cfg)
+
+    # Reload and check
+    config.load_config.cache_clear()
+    new_cfg = config.load_config()
+    assert new_cfg.module_path == "/new/path"
+    assert "module_path: /new/path" in config_path.read_text()

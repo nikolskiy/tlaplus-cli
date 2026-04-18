@@ -141,6 +141,14 @@ Compile modules in a specific project path:
 tla modules build path/to/project
 ```
 
+Configure a persistent custom modules path:
+```bash
+tla modules path /path/to/custom/modules
+```
+
+> [!TIP]
+> Setting a persistent `module_path` allows `tla modules build` and `tla tlc` to resolve your Java overrides regardless of where the commands are executed.
+
 Verbose output:
 ```bash
 tla modules build --verbose
@@ -191,6 +199,8 @@ workspace:
 tlc:
   java_class: tlc2.TLC
   overrides_class: tlc2.overrides.TLCOverrides
+
+module_path: null         # (Optional) Persistent custom modules path
 
 java:
   min_version: 11

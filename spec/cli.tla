@@ -21,6 +21,7 @@ CONSTANTS
 VARIABLES
     (* --- Filesystem state --- *)
     configExists,      \* BOOLEAN: whether config.yaml exists on disk
+    isModulePathConfigured, \* BOOLEAN: whether a custom modules path is set in config
     installedVersions, \* set of records [name |-> ..., sha |-> ...]
     pinnedVersion,     \* a record [name |-> ..., sha |-> ...] or "none"
     legacyJarExists,   \* BOOLEAN: legacy tla2tools.jar in cache root
@@ -37,27 +38,27 @@ VARIABLES
     javaMajorVersion,  \* Nat: major version number of installed java
 
     (* --- Workspace markers --- *)
-    hasModulesDir,     \* BOOLEAN: modules/ directory exists
+    isModuleDirCorrect, \* BOOLEAN: modules/ directory exists in configured path
     hasClassesDir,     \* BOOLEAN: classes/ directory exists
 
     (* --- Operation result tracking --- *)
     lastResult         \* "ok" | "error_*" for last operation outcome
 
-vars == <<configExists, installedVersions, pinnedVersion, legacyJarExists,
+vars == <<configExists, isModulePathConfigured, installedVersions, pinnedVersion, legacyJarExists,
           cacheState, cachedVersions, apiAvailable,
           javaInstalled, javaMajorVersion,
-          hasModulesDir, hasClassesDir, lastResult>>
+          isModuleDirCorrect, hasClassesDir, lastResult>>
 
 \* ----------------------------------------------------------------
 \* Variable Groups for UNCHANGED simplification
 \* ----------------------------------------------------------------
-configVars    == <<configExists>>
+configVars    == <<configExists, isModulePathConfigured>>
 versionVars   == <<installedVersions, pinnedVersion>>
 legacyVars    == <<legacyJarExists>>
 cacheVars     == <<cacheState, cachedVersions>>
 apiVars       == <<apiAvailable>>
 javaVars      == <<javaInstalled, javaMajorVersion>>
-workspaceVars == <<hasModulesDir, hasClassesDir>>
+workspaceVars == <<isModuleDirCorrect, hasClassesDir>>
 stateVars     == <<configVars, versionVars, legacyVars, cacheVars, apiVars, javaVars, workspaceVars>>
 
 
@@ -71,6 +72,7 @@ NoneVersion == [name |-> "none", sha |-> "none"]
    ================================================================ *)
 TypeOK ==
     /\ configExists \in BOOLEAN
+    /\ isModulePathConfigured \in BOOLEAN
     /\ installedVersions \subseteq [name: Versions, sha: STRING]
     /\ pinnedVersion \in [name: Versions, sha: STRING] \cup {NoneVersion}
     /\ legacyJarExists \in BOOLEAN
@@ -79,7 +81,7 @@ TypeOK ==
     /\ apiAvailable \in BOOLEAN
     /\ javaInstalled \in BOOLEAN
     /\ javaMajorVersion \in Nat
-    /\ hasModulesDir \in BOOLEAN
+    /\ isModuleDirCorrect \in BOOLEAN
     /\ hasClassesDir \in BOOLEAN
     /\ lastResult \in STRING
 
@@ -128,6 +130,7 @@ JavaCompatible == javaInstalled /\ javaMajorVersion >= 11
    ================================================================ *)
 Init ==
     /\ configExists = FALSE
+    /\ isModulePathConfigured = FALSE
     /\ installedVersions = {}
     /\ pinnedVersion = NoneVersion
     /\ legacyJarExists = FALSE
@@ -136,7 +139,7 @@ Init ==
     /\ apiAvailable \in BOOLEAN      \* unknown at start
     /\ javaInstalled \in BOOLEAN     \* unknown at start
     /\ javaMajorVersion \in 8..21    \* representative range
-    /\ hasModulesDir \in BOOLEAN
+    /\ isModuleDirCorrect \in BOOLEAN
     /\ hasClassesDir \in BOOLEAN
     /\ lastResult = "init"
 
@@ -407,6 +410,24 @@ RunTLC_NoJar ==
     /\ UNCHANGED stateVars
 
 (* ================================================================
+   ACTION: SetModulePath
+   Corresponds to: tla modules path <path>
+   Related code: build_tlc_module.py / config.py
+   Sets and validates a custom modules directory path.
+   ================================================================ *)
+SetModulePath_Success ==
+    /\ configExists
+    /\ isModulePathConfigured' = TRUE
+    /\ isModuleDirCorrect' = TRUE
+    /\ lastResult' = "ok"
+    /\ UNCHANGED <<configExists, versionVars, legacyVars, cacheVars, apiVars, javaVars, hasClassesDir>>
+
+SetModulePath_Invalid ==
+    /\ configExists
+    /\ lastResult' = "error_invalid_path"
+    /\ UNCHANGED stateVars
+
+(* ================================================================
    ACTION: BuildModules
    Corresponds to: tla modules <subcommand>
    Related code: build_tlc_module.py
@@ -415,10 +436,10 @@ RunTLC_NoJar ==
 BuildModules_Success ==
     /\ configExists
     /\ JarAvailable
-    /\ hasModulesDir
+    /\ isModuleDirCorrect
     /\ lastResult' = "ok"
     /\ hasClassesDir' = TRUE  \* classes/ created by build
-    /\ UNCHANGED <<configVars, versionVars, legacyVars, cacheVars, apiVars, javaVars, hasModulesDir>>
+    /\ UNCHANGED <<configVars, versionVars, legacyVars, cacheVars, apiVars, javaVars, isModuleDirCorrect>>
 
 BuildModules_NoJar ==
     /\ configExists
@@ -429,7 +450,7 @@ BuildModules_NoJar ==
 BuildModules_NoModulesDir ==
     /\ configExists
     /\ JarAvailable
-    /\ ~hasModulesDir
+    /\ ~isModuleDirCorrect
     /\ lastResult' = "error_no_modules_dir"
     /\ UNCHANGED stateVars
 
@@ -522,6 +543,8 @@ Next ==
     \/ RunTLC_NoJar
 
     (* Module build *)
+    \/ SetModulePath_Success
+    \/ SetModulePath_Invalid
     \/ BuildModules_Success
     \/ BuildModules_NoJar
     \/ BuildModules_NoModulesDir

@@ -1,4 +1,3 @@
-
 import pytest
 
 from tlaplus_cli.cli import app

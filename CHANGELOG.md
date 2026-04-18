@@ -7,8 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- `tla modules path <PATH>` — configure a persistent custom Java modules path. This decouples module compilation and execution from the current working directory.
+
 ### Changed
-- Reorganized and improved tests. 
+- `tla modules build` now prioritizes the configured `module_path` for source discovery.
+- `tla tlc` now automatically includes the configured `module_path` in the Java classpath and sets `-DTLA-Library` if it exists, enabling global or persistent custom module overrides.
+- Reorganized and improved tests.
 
 ## [0.3.4] - 2026-04-06
 
