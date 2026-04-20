@@ -30,7 +30,9 @@ def build(
 
     modules_dir = Path(config.module_path) if config.module_path else base_dir / config.workspace.modules_dir
     classes_dir = base_dir / config.workspace.classes_dir
-    lib_dir = base_dir / "lib"
+
+    lib_dir = Path(config.module_lib_path) if config.module_lib_path else modules_dir / "lib"
+
     lib_jars = sorted(lib_dir.glob("*.jar")) if lib_dir.is_dir() else []
     classpath = os.pathsep.join([str(jar_path)] + [str(j) for j in lib_jars])
 
@@ -72,9 +74,27 @@ def build(
         raise typer.Exit(1) from None
 
 
-def set_modules_path(path: str = typer.Argument(..., help="Path to the custom Java modules directory.")) -> None:
-    """Configure a persistent custom Java modules path."""
+def set_modules_path(
+    path: str | None = typer.Argument(None, help="Path to the custom Java modules directory, or 'none' to reset.")
+) -> None:
+    """Configure or view a persistent custom Java modules path."""
     config_obj = load_config()
+
+    if path is None:
+        if config_obj.module_path:
+            typer.echo(f"Current modules path: {config_obj.module_path}")
+        else:
+            default_path = workspace_root() / config_obj.workspace.modules_dir
+            typer.echo("Custom modules path is not set.")
+            typer.echo(f"Defaulting to: {default_path}")
+        return
+
+    if path.lower() == "none":
+        config_obj.module_path = None
+        save_config(config_obj)
+        typer.echo("Custom modules path reset to default.")
+        return
+
     p = Path(path).resolve()
 
     if not p.is_dir():
@@ -84,3 +104,42 @@ def set_modules_path(path: str = typer.Argument(..., help="Path to the custom Ja
     config_obj.module_path = str(p)
     save_config(config_obj)
     typer.echo(f"Modules path updated to: {p}")
+
+
+def set_modules_lib_path(
+    path: str | None = typer.Argument(
+        None, help="Path to the custom Java modules dependencies directory, or 'none' to reset."
+    )
+) -> None:
+    """Configure or view a persistent custom Java modules dependencies (lib) path."""
+    config_obj = load_config()
+
+    if path is None:
+        if config_obj.module_lib_path:
+            typer.echo(f"Current modules lib path: {config_obj.module_lib_path}")
+        else:
+            modules_dir = (
+                Path(config_obj.module_path)
+                if config_obj.module_path
+                else workspace_root() / config_obj.workspace.modules_dir
+            )
+            default_path = modules_dir / "lib"
+            typer.echo("Custom modules lib path is not set.")
+            typer.echo(f"Defaulting to: {default_path}")
+        return
+
+    if path.lower() == "none":
+        config_obj.module_lib_path = None
+        save_config(config_obj)
+        typer.echo("Custom modules lib path reset to default.")
+        return
+
+    p = Path(path).resolve()
+
+    if not p.is_dir():
+        typer.echo(f"Error: Path does not exist or is not a directory: {p}", err=True)
+        raise typer.Exit(1)
+
+    config_obj.module_lib_path = str(p)
+    save_config(config_obj)
+    typer.echo(f"Modules lib path updated to: {p}")

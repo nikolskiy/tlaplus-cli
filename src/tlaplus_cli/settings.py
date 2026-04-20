@@ -47,3 +47,4 @@ class Settings(BaseModel):
     tlc: TlcConfig
     java: JavaConfig = Field(default_factory=JavaConfig)
     module_path: str | None = None
+    module_lib_path: str | None = None

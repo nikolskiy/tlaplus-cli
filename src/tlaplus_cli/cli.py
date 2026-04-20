@@ -5,9 +5,10 @@ import importlib.metadata
 import typer
 
 from tlaplus_cli.build_tlc_module import build as build_tlc_cmd
-from tlaplus_cli.build_tlc_module import set_modules_path
+from tlaplus_cli.build_tlc_module import set_modules_lib_path, set_modules_path
 from tlaplus_cli.check_java import check_java_version, get_java_version
 from tlaplus_cli.config import load_config
+from tlaplus_cli.config_cli import config_app
 from tlaplus_cli.run_tlc import tlc as run_tlc_cmd
 from tlaplus_cli.tools_manager import fetch_cache_app, tools_app
 
@@ -52,10 +53,12 @@ def root(
 modules_app = typer.Typer(name="modules", help="Manage TLA+ Java modules.", no_args_is_help=True)
 modules_app.command(name="build")(build_tlc_cmd)
 modules_app.command(name="path")(set_modules_path)
+modules_app.command(name="lib")(set_modules_lib_path)
 
 app.add_typer(modules_app, name="modules")
 app.add_typer(tools_app, name="tools")
 app.add_typer(fetch_cache_app, name="fetch-cache")
+app.add_typer(config_app, name="config")
 
 app.command(name="tlc")(run_tlc_cmd)
 

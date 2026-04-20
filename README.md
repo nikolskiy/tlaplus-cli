@@ -146,8 +146,25 @@ Configure a persistent custom modules path:
 tla modules path /path/to/custom/modules
 ```
 
+View or reset the custom modules path:
+```bash
+tla modules path         # View current path
+tla modules path none    # Reset to default
+```
+
+Configure a persistent custom modules dependencies (lib) path:
+```bash
+tla modules lib /path/to/custom/libs
+```
+
+View or reset the custom lib path:
+```bash
+tla modules lib          # View current path
+tla modules lib none     # Reset to default
+```
+
 > [!TIP]
-> Setting a persistent `module_path` allows `tla modules build` and `tla tlc` to resolve your Java overrides regardless of where the commands are executed.
+> Setting a persistent `module_path` (and optionally `module_lib_path`) allows `tla modules build` and `tla tlc` to resolve your Java overrides regardless of where the commands are executed.
 
 Verbose output:
 ```bash
@@ -182,7 +199,15 @@ On first run, a default config is created at:
 ~/.config/tla/config.yaml
 ```
 
-Edit this file to set your workspace path and TLC options:
+You can manage the configuration using the `tla config` command:
+
+```bash
+tla config list          # Display current configuration
+tla config edit          # Open config in default editor ($EDITOR or vim)
+tla config edit nano     # Open config in a specific editor
+```
+
+Example configuration (`config.yaml`):
 
 ```yaml
 tla:
@@ -201,6 +226,7 @@ tlc:
   overrides_class: tlc2.overrides.TLCOverrides
 
 module_path: null         # (Optional) Persistent custom modules path
+module_lib_path: null     # (Optional) Persistent custom modules lib path
 
 java:
   min_version: 11

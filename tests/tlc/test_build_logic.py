@@ -62,9 +62,10 @@ def test_build_without_path_uses_workspace_root(mocker, tmp_path, base_settings,
 def test_build_includes_lib_jars_in_classpath(mocker, tmp_path, base_settings, runner):
     """javac classpath includes *.jar files from project lib/ directory."""
     project_dir = tmp_path / "my_project"
-    (project_dir / "modules").mkdir(parents=True)
-    (project_dir / "modules" / "Foo.java").write_text("class Foo {}")
-    lib_dir = project_dir / "lib"
+    modules_dir = project_dir / "modules"
+    modules_dir.mkdir(parents=True)
+    (modules_dir / "Foo.java").write_text("class Foo {}")
+    lib_dir = modules_dir / "lib"
     lib_dir.mkdir()
     extra_jar = lib_dir / "extra.jar"
     extra_jar.write_bytes(b"fake")

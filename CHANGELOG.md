@@ -8,6 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 
+## [0.4.0] - 2026-04-20
+
+### Added
+- `tla modules lib <PATH>` — configure a persistent custom Java modules dependencies directory (jars).
+- `tla config list` — display the current configuration file content.
+- `tla config edit [EDITOR]` — open the configuration file in an editor ($EDITOR or vim).
+
+### Changed
+- `tla modules path` — now supports viewing the current path (no arguments) and resetting it (`tla modules path none`).
+- `tla modules build` — now uses the configured `module_lib_path` if set, otherwise defaults to the `lib/` subdirectory within the resolved modules directory.
+
 ## [0.3.5] - 2026-04-19
 
 ### Added
