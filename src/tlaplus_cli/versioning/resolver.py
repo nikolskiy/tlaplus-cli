@@ -75,6 +75,7 @@ def resolve_latest_version(versions: Sequence[LocalVersion]) -> LocalVersion | N
 
 
 def list_local_versions() -> list[LocalVersion]:
+    """List all TLC versions currently installed in the local cache."""
     tools_dir = get_tools_dir()
     if not tools_dir.exists():
         return []

@@ -51,7 +51,7 @@ def test_tlc_pin_interactive_choice(mock_load_config, mock_cache, make_installed
     make_installed_version("v1.8.0", "aaaaaaa")
     make_installed_version("v1.8.0", "bbbbbbb")
 
-    mocker.patch("typer.prompt", return_value=1)
+    mocker.patch("typer.prompt", return_value=0)
 
     result = runner.invoke(app, ["tools", "pin", "v1.8.0"])
     assert result.exit_code == 0

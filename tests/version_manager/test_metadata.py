@@ -1,4 +1,5 @@
 import json
+import subprocess
 
 from tlaplus_cli.versioning import (
     RemoteVersion,
@@ -82,7 +83,7 @@ def test_write_version_metadata_from_url_handles_subprocess_failure(tmp_path, mo
 
     mocker.patch(
         "tlaplus_cli.versioning.metadata.subprocess.run",
-        side_effect=Exception("java not found"),
+        side_effect=subprocess.SubprocessError("java not found"),
     )
 
     write_version_metadata_from_url(

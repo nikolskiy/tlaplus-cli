@@ -1,4 +1,5 @@
 import shutil
+from pathlib import Path
 
 import typer
 
@@ -11,74 +12,92 @@ from tlaplus_cli.versioning import (
     resolve_latest_version,
     set_pin,
 )
-from tlaplus_cli.versioning.schema import LocalVersion
 
 
-def _resolve_uninstall_targets(version: str, all_tags: bool) -> list[LocalVersion]:
+def _resolve_uninstall_targets(versions: list[str]) -> list[Path]:
+    """Resolve version names to local directory paths."""
     local_versions = list_local_versions()
-    matching = [lv for lv in local_versions if lv.name == version]
+    targets: list[Path] = []
+    for v in versions:
+        if v == "default":
+            legacy = cache_dir() / "tla2tools.jar"
+            if legacy.exists():
+                targets.append(legacy)
+            else:
+                typer.echo("⚠ Warning: Default (legacy) tla2tools.jar not found.", err=True)
+            continue
 
-    if not matching:
-        typer.echo(f"Error: Version {version} not found locally.", err=True)
-        raise typer.Exit(1)
+        matching = sorted([lv for lv in local_versions if lv.name == v], key=lambda x: x.path.name)
+        if not matching:
+            typer.echo(f"⚠ Warning: Version {v} not found locally.", err=True)
+            continue
 
-    matching.sort(key=lambda x: x.path.name)
+        if len(matching) > 1:
+            typer.echo(f"Multiple versions match {v}:")
+            for i, lv in enumerate(matching):
+                typer.echo(f"[{i}] {lv.path.name}")
+            choice = typer.prompt(f"Select build of {v} to uninstall (or 'all')", default="all")
 
-    if len(matching) > 1 and not all_tags:
-        typer.echo("Multiple versions match:")
-        for i, lv in enumerate(matching):
-            typer.echo(f"[{i}] {lv.path.name}")
-        choice = typer.prompt("Select version to uninstall", type=int)
-        if 0 <= choice < len(matching):
-            return [matching[choice]]
-        typer.echo("Invalid choice.", err=True)
-        raise typer.Exit(1)
+            if str(choice).lower() == "all":
+                targets.extend(lv.path for lv in matching)
+            else:
+                try:
+                    idx = int(choice)
+                    targets.append(matching[idx].path)
+                except (ValueError, IndexError):
+                    typer.echo("Invalid choice, skipping.", err=True)
+        else:
+            targets.append(matching[0].path)
+    return targets
 
-    return matching
+
+def _remove_path(path: Path, pinned_dir: Path | None) -> bool:
+    """Remove a path (file or dir), returns True if it was the pinned version."""
+    pinned_removed = False
+    if pinned_dir and path.is_dir() and path.resolve() == pinned_dir.resolve():
+        pinned_removed = True
+        typer.echo(f"Note: {path.name} is currently pinned.")
+
+    typer.echo(f"Removing {path.name} ...")
+    try:
+        if path.is_dir():
+            shutil.rmtree(path)
+        else:
+            path.unlink()
+    except OSError as e:
+        typer.echo(f"Error: Failed to remove {path.name}: {e}", err=True)
+    return pinned_removed
 
 
 @app.command()
 def uninstall(
-    version: str = typer.Argument(None),
-    all: bool = typer.Option(False, "--all", help="Remove all matching versions."),
+    versions: list[str] = typer.Argument(None, help="One or more version tags to uninstall."),  # noqa: B008
+    all_versions: bool = typer.Option(
+        False, "--all", help="Uninstall ALL local versions (danger!)."
+    ),
+    yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation prompt."),
 ) -> None:
-    if not version:
-        typer.echo("Error: Please provide a version to uninstall, or 'default' to remove legacy jar.", err=True)
-        raise typer.Exit(1)
+    """Remove one or more installed TLC versions from the local cache."""
+    if all_versions:
+        if not yes and not typer.confirm("This will delete ALL installed TLC versions. Are you sure?"):
+            raise typer.Abort()
+        targets = [lv.path for lv in list_local_versions()]
+    else:
+        if not versions:
+            typer.echo("Error: Missing argument 'VERSIONS...'.", err=True)
+            raise typer.Exit(1)
+        targets = _resolve_uninstall_targets(versions)
 
-    if version == "default":
-        legacy = cache_dir() / "tla2tools.jar"
-        if legacy.exists():
-            legacy.unlink()
-            typer.echo("Legacy tla2tools.jar removed.")
-        else:
-            typer.echo("No legacy tla2tools.jar found.")
+    if not targets:
+        typer.echo("No versions to uninstall.")
         return
 
-    targets = _resolve_uninstall_targets(version, all)
-
     pinned_dir = get_pinned_version_dir()
-    pinned_dir_name = pinned_dir.name if pinned_dir else None
-    uninstalled_pinned = False
+    any_pinned_removed = any(_remove_path(p, pinned_dir) for p in targets)
 
-    for lv in targets:
-        if pinned_dir_name and pinned_dir_name == lv.path.name:
-            confirm = typer.confirm(
-                f"Version {lv.path.name} is currently pinned. Uninstalling it will break `tla tlc`. Continue?"
-            )
-            if not confirm:
-                typer.echo("Aborted.")
-                continue
-            clear_pin()
-            uninstalled_pinned = True
-            typer.echo(f"Unpinned {lv.path.name}.")
-
-        shutil.rmtree(lv.path)
-        typer.echo(f"Uninstalled {lv.path.name}.")
-
-    if uninstalled_pinned:
-        remaining = list_local_versions()
-        latest = resolve_latest_version(remaining)
+    if any_pinned_removed:
+        clear_pin()
+        latest = resolve_latest_version(list_local_versions())
         if latest:
             set_pin(latest.path)
             typer.echo(f"Pin fell back to {latest.path.name}")

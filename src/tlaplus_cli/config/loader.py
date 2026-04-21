@@ -16,7 +16,7 @@ def load_config() -> Settings:
 
     Creates a default config on first run.
     """
-    cp = _ensure_config()
+    cp = ensure_config()
     with cp.open(encoding="utf-8") as f:
         data = yaml.safe_load(f)
         return Settings.model_validate(data)
@@ -61,11 +61,13 @@ def _default_config_content() -> str:
     """Read the default config shipped with the package."""
     # Safer than __file__, correctly handles zipped wheels and zipapps.
     return (
-        importlib.resources.files("tlaplus_cli.resources").joinpath("default_config.yaml").read_text(encoding="utf-8")
+        importlib.resources.files("tlaplus_cli.resources")
+        .joinpath("default_config.yaml")
+        .read_text(encoding="utf-8")
     )
 
 
-def _ensure_config() -> Path:
+def ensure_config() -> Path:
     """Copy default config to user config dir if it doesn't exist yet."""
     cp = config_path()
     if not cp.exists():

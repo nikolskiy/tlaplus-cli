@@ -5,7 +5,7 @@ import subprocess
 import typer
 
 from tlaplus_cli.cmd.config import app
-from tlaplus_cli.config.loader import _ensure_config, config_path
+from tlaplus_cli.config.loader import config_path, load_config
 
 
 @app.command(name="edit")
@@ -15,8 +15,8 @@ def edit_config(
     """Open the configuration file in an editor."""
     cp = config_path()
 
-    # Ensure config exists
-    _ensure_config()
+    # Ensure config exists by loading it
+    load_config()
 
     if not editor:
         editor = os.environ.get("EDITOR", "vim")

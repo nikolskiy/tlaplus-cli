@@ -8,6 +8,27 @@ from tlaplus_cli.project import find_project_root
 from tlaplus_cli.tlc.compiler import get_tlc_jar_path
 
 
+def resolve_spec_file(spec: str) -> tuple[Path, str]:
+    """Resolve a .tla spec file from a string name.
+
+    Returns (absolute_path, display_name).
+    Raises FileNotFoundError if not found.
+    """
+    spec_path = Path(spec)
+    candidates = [
+        spec_path,
+        spec_path.with_suffix(".tla"),
+        spec_path.parent / "spec" / (spec_path.name + ".tla"),
+    ]
+
+    spec_file = next((c for c in candidates if c.is_file()), None)
+    if not spec_file:
+        msg = f"Could not find a TLA+ spec file for '{spec}'"
+        raise FileNotFoundError(msg)
+
+    return spec_file.absolute(), spec_file.name
+
+
 def run_tlc(spec: str) -> int:
     """Run TLC model checker on a TLA+ specification. Returns exit code."""
     config = load_config()
@@ -19,16 +40,7 @@ def run_tlc(spec: str) -> int:
         msg = "tla2tools.jar not found. Run 'tla tools install' first."
         raise FileNotFoundError(msg)
 
-    # Spec resolution logic
-    spec_path = Path(spec)
-    candidates = [spec_path, spec_path.with_suffix(".tla"), spec_path.parent / "spec" / (spec_path.name + ".tla")]
-
-    spec_file = next((c for c in candidates if c.is_file()), None)
-    if not spec_file:
-        msg = f"Could not find a TLA+ spec file for '{spec}'"
-        raise FileNotFoundError(msg)
-
-    spec_file = spec_file.absolute()
+    spec_file, _ = resolve_spec_file(spec)
     project_root = find_project_root(
         spec_file, modules_dir=config.workspace.modules_dir, classes_dir=config.workspace.classes_dir
     )
@@ -63,8 +75,13 @@ def run_tlc(spec: str) -> int:
         spec_file.name,
     ]
 
-    result = subprocess.run(cmd, cwd=str(spec_file.parent))
-    return result.returncode
+    try:
+        result = subprocess.run(cmd, cwd=str(spec_file.parent), check=False)
+    except FileNotFoundError:
+        msg = "'java' not found. Please install Java."
+        raise FileNotFoundError(msg) from None
+    else:
+        return result.returncode
 
 
 def get_tlc_version() -> str | None:

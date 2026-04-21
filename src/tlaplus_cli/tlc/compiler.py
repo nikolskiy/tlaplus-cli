@@ -45,17 +45,14 @@ def compile_modules(base_dir: Path | None = None, verbose: bool = False) -> Path
 
     try:
         subprocess.run(cmd, check=True, capture_output=not verbose, text=True)
-    except subprocess.CalledProcessError:
-        # Re-raise with info or handle in CLI
-        raise
     except FileNotFoundError as err:
         msg = "'javac' not found. Ensure JDK is installed and in PATH."
         raise FileNotFoundError(msg) from err
-    else:
-        meta_inf = classes_dir / "META-INF" / "services"
-        meta_inf.mkdir(parents=True, exist_ok=True)
-        service_file = meta_inf / "tlc2.overrides.ITLCOverrides"
-        with service_file.open("w") as f:
-            f.write(f"{config.tlc.overrides_class}\n")
 
-        return classes_dir
+    meta_inf = classes_dir / "META-INF" / "services"
+    meta_inf.mkdir(parents=True, exist_ok=True)
+    service_file = meta_inf / "tlc2.overrides.ITLCOverrides"
+    with service_file.open("w") as f:
+        f.write(f"{config.tlc.overrides_class}\n")
+
+    return classes_dir

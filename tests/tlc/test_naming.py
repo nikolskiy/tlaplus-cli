@@ -34,7 +34,7 @@ def test_tlc_overrides_naming_works(
     if not javac_available:
         pytest.skip("javac not found")
     setup_naming_env_fixture(tmp_path, mocker, base_settings, naming_fixed_dir)
-
+    mocker.patch("tlaplus_cli.tlc.runner.validate_java_version")
     res_build = runner.invoke(app, ["modules", "build"])
     assert res_build.exit_code == 0, f"Module compilation failed: {res_build.stdout}"
 
@@ -68,7 +68,7 @@ def test_module_name_class_naming_fails(
     if not javac_available:
         pytest.skip("javac not found")
     setup_naming_env_fixture(tmp_path, mocker, base_settings, naming_dynamic_dir)
-
+    mocker.patch("tlaplus_cli.tlc.runner.validate_java_version")
     res_build = runner.invoke(app, ["modules", "build"])
     assert res_build.exit_code == 0, f"Module compilation failed: {res_build.stdout}"
 

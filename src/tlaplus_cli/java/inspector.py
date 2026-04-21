@@ -4,6 +4,8 @@ import re
 import shutil
 import subprocess
 
+from tlaplus_cli.ui import warn
+
 
 def get_java_version() -> str | None:
     """Get the installed Java version string using 'java -version'."""
@@ -62,20 +64,23 @@ def validate_java_version(min_version: int) -> None:
     """Check if installed Java version is at least min_version.
 
     Raises:
-        RuntimeError: if Java is not found or version is too low.
+        RuntimeError: if Java is not installed or version is too low.
     """
     version_str = get_java_version()
 
     if not version_str:
-        msg = f"Java {min_version}+ not found. Please install Java."
+        msg = f"Java is not installed or not found in PATH. Please install Java {min_version} or higher."
         raise RuntimeError(msg)
 
     try:
         major_version = parse_java_version(version_str)
     except (ValueError, IndexError):
-        # Warning is handled in CLI
+        warn(f"Could not parse Java version string: {version_str}")
         return
 
     if major_version < min_version:
-        msg = f"Java {min_version}+ required; found {version_str}."
+        msg = (
+            f"Java version {min_version} or higher is required. "
+            f"Found version {version_str} (major version {major_version})."
+        )
         raise RuntimeError(msg)

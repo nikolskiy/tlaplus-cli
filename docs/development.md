@@ -67,7 +67,124 @@ messages to stdout when unexpected parameters are passed. To avoid storing junk:
 - Always strip and split stdout: `result.stdout.strip().split("\n")[0]`
 - Capture stderr separately and validate it independently when needed.
 
-### 4. Pytest Patterns & Typer Mocks
+### 4. Exception Handling
+
+**Never use `except Exception`.** Every `except` clause must name the narrowest set of exception types
+that the protected code can actually raise. Catching `Exception` hides programming errors
+(`TypeError`, `AttributeError`, `KeyError`) behind user-facing messages and makes bugs nearly
+impossible to diagnose.
+
+Use the following mapping as a guide:
+
+| Operation | Catch |
+|---|---|
+| File / directory I/O (`open`, `mkdir`, `rename`, `stat`, `unlink`) | `OSError` |
+| HTTP requests (`requests.get`, `.raise_for_status()`) | `requests.RequestException` |
+| JSON parsing (`json.load`, `json.loads`) | `json.JSONDecodeError` |
+| Subprocess invocation (`subprocess.run`) | `subprocess.SubprocessError`, `OSError` |
+| Dataclass / model construction from untrusted data | `KeyError`, `TypeError`, `ValueError` |
+
+When multiple failure modes are possible in the same `try` block, combine them in a tuple:
+
+```python
+# correct
+except (json.JSONDecodeError, OSError, KeyError) as e:
+    ...
+
+# forbidden
+except Exception as e:
+    ...
+```
+
+### 5. Try-Block Scoping
+
+A `try` block should contain **only** the statement(s) that can raise the caught exception. All
+preparatory work (variable assignments, logging, `typer.echo`) and all follow-up work (displaying
+results, constructing paths) must live **outside** the `try/except`.
+
+```python
+# correct — only the call that raises is protected
+typer.echo("Compiling ...")
+try:
+    result = compile_modules(base_dir)
+except FileNotFoundError as e:
+    typer.echo(f"Error: {e}", err=True)
+    raise typer.Exit(1) from None
+typer.echo(f"Success: {result}")
+
+# forbidden — unrelated statements padded into the try
+try:
+    typer.echo("Compiling ...")
+    result = compile_modules(base_dir)
+    typer.echo(f"Success: {result}")
+except FileNotFoundError as e:
+    ...
+```
+
+Similarly, avoid the `try/except/else` pattern when the `except` branch already raises or returns.
+In that case the code after `try` naturally acts as the "else" path, and using `else:` only adds
+indentation for no benefit.
+
+Do not catch an exception only to `raise` it unchanged — let it propagate naturally:
+
+```python
+# forbidden — redundant catch-and-re-raise
+except subprocess.CalledProcessError:
+    raise
+
+# correct — simply omit the handler; the exception propagates on its own
+```
+
+### 6. DRY & Separation of Concerns
+
+- **No logic duplication across layers.** If the same algorithm (e.g., spec-file resolution,
+  download-with-progress, metadata writing) appears in more than one function, extract it into a
+  single shared helper in the appropriate concept module and call it from both sites.
+- **cmd/ must not contain domain logic.** Commands in `cmd/` may only parse arguments, call into
+  concept modules, and format output. Resolution, validation, and file-manipulation logic must live
+  in the concept layer (`tlc/`, `versioning/`, `config/`, etc.).
+- **Helpers must not emit UI output.** Functions that resolve, compute, or validate should return
+  results (or raise exceptions). Only the calling command in `cmd/` should decide what to
+  `typer.echo`. This ensures helpers remain testable without patching `typer`.
+- **Extract common CLI patterns into small utilities.** Repeated micro-patterns such as "auto-pin
+  if no version is currently pinned" should be captured in a named helper to avoid copy-paste drift.
+
+### 7. Naming & Public API Hygiene
+
+- **Underscore convention is binding.** A function prefixed with `_` is private to its module. It
+  must never be imported by other packages. If another module needs it, either rename it (drop the
+  underscore) to make it public, or provide a public wrapper.
+- **`__all__` must not list private symbols.** Including `_foo` in `__all__` contradicts the naming
+  convention and confuses tooling. Either make the symbol public or remove it from `__all__`.
+- **Avoid shadowing builtins.** Do not name modules or imports `list`, `dir`, `type`, etc. If a
+  Typer command needs a builtin name, use `@app.command(name="list")` on a differently-named function
+  and file (e.g., `show.py`).
+- **Consistent field naming in schemas.** Related fields on a Pydantic model should follow a
+  uniform naming pattern. Prefer grouping related optional fields into a nested model when their
+  count grows.
+
+### 8. Docstrings & Documentation
+
+- **Every public function and class must have a docstring.** This is especially critical for Typer
+  commands because Typer uses the docstring as `--help` text. A missing docstring produces a blank
+  help description.
+- **Docstrings on concept-layer functions** should describe parameters, return values, and any
+  exceptions that are raised (following the Google or NumPy style consistently).
+
+### 9. User-Facing Messages
+
+- **Standardize warning format.** All warnings must use the same prefix: `"⚠ Warning: <message>"`,
+  written to stderr. Consider using a shared `warn()` helper:
+  ```python
+  def warn(message: str) -> None:
+      typer.echo(f"⚠ Warning: {message}", err=True)
+  ```
+- **Standardize error format.** All errors must use: `"Error: <message>"`, written to stderr,
+  followed by `raise typer.Exit(1)`.
+- **Never swallow exceptions silently.** If a `try/except` block intentionally suppresses an error,
+  it must still log a warning via `warn()` so the user has observability into failures.
+
+### 10. Pytest Patterns & Typer Mocks
 
 **Isolated test directories:** Pre-create fixture directories (e.g., `installed_v180`, `mock_cache`)
 inside the test scope so Typer's `CliRunner` operates in isolation and never touches the host's

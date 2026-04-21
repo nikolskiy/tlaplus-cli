@@ -1,8 +1,7 @@
 from pathlib import Path
 
-import typer
-
 from tlaplus_cli.config.loader import cache_dir
+from tlaplus_cli.ui import warn
 
 
 def get_github_cache_file() -> Path:
@@ -40,8 +39,8 @@ def _migrate_legacy_pin() -> None:
     if old_dir.exists() and not new_dir.exists():
         try:
             old_dir.rename(new_dir)
-        except Exception as e:
-            typer.echo(f"⚠ Warning: Failed to migrate legacy cache: {e}", err=True)
+        except OSError as e:
+            warn(f"Failed to migrate legacy cache: {e}")
 
     # 2. Migrate legacy symlink pin
     legacy_symlink = new_dir / "pinned"
@@ -50,8 +49,8 @@ def _migrate_legacy_pin() -> None:
             target_name = legacy_symlink.readlink().name
             legacy_symlink.unlink()
             get_pinned_path().write_text(target_name)
-        except Exception as e:
-            typer.echo(f"⚠ Warning: Failed to migrate legacy symlink pin: {e}", err=True)
+        except OSError as e:
+            warn(f"Failed to migrate legacy symlink pin: {e}")
 
     # 3. Migrate legacy filename tlc-pinned-version.txt -> tools-pinned-version.txt
     old_pin_file = new_dir / "tlc-pinned-version.txt"
@@ -59,8 +58,8 @@ def _migrate_legacy_pin() -> None:
     if old_pin_file.exists() and not new_pin_file.exists():
         try:
             old_pin_file.rename(new_pin_file)
-        except Exception as e:
-            typer.echo(f"⚠ Warning: Failed to migrate legacy pin file: {e}", err=True)
+        except OSError as e:
+            warn(f"Failed to migrate legacy pin file: {e}")
 
 
 def set_pin(version_dir: Path) -> None:
@@ -78,6 +77,7 @@ def clear_pin() -> None:
 
 
 def clear_cache() -> None:
+    """Remove the remote versions cache file."""
     cache_file = get_github_cache_file()
     if cache_file.exists():
         cache_file.unlink()

@@ -1,3 +1,5 @@
+import requests
+
 from tlaplus_cli.cli import app
 
 
@@ -188,7 +190,7 @@ def test_install_from_url_network_error(mock_cache, mock_load_config, mocker, ru
 
     mocker.patch(
         "tlaplus_cli.cmd.tools.install.download_version_from_url",
-        side_effect=Exception("connection refused"),
+        side_effect=requests.RequestException("connection refused"),
     )
 
     result = runner.invoke(app, ["tools", "install", url])

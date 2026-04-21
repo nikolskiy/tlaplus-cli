@@ -1,5 +1,4 @@
 import json
-import shutil
 from pathlib import Path
 
 import pytest
@@ -11,48 +10,19 @@ PROJECT_ROOT = Path(__file__).parent.parent
 FIXTURES_DIR = PROJECT_ROOT / "tests/fixtures"
 
 
-@pytest.fixture(scope="session")
-def runner() -> CliRunner:
-    """Session-scoped CLI runner."""
-    return CliRunner()
-
-
-@pytest.fixture(scope="session")
-def project_root() -> Path:
-    """Root directory of the project."""
-    return PROJECT_ROOT
-
-
-@pytest.fixture(scope="session")
-def fixtures_dir() -> Path:
-    """Path to the fixtures directory."""
+@pytest.fixture
+def fixtures_dir():
     return FIXTURES_DIR
 
 
-@pytest.fixture(scope="session")
-def queue_dir() -> Path:
-    """Path to the queue example fixture."""
-    return FIXTURES_DIR / "queue"
+@pytest.fixture
+def runner():
+    return CliRunner()
 
 
 @pytest.fixture
-def javac_available() -> bool:
-    """Check if javac is available on the system."""
-    return shutil.which("javac") is not None
-
-
-@pytest.fixture
-def java_available() -> bool:
-    """Check if java is available on the system."""
-    return shutil.which("java") is not None
-
-
-@pytest.fixture
-def base_settings(tmp_path: Path) -> Settings:
-    """
-    Returns a basic valid Settings object with workspace paths pointing to tmp_path.
-    Can be modified by tests before patching.
-    """
+def base_settings():
+    """Returns a basic Settings object matching default_config.yaml."""
     return Settings(
         tla={
             "urls": {
@@ -60,25 +30,23 @@ def base_settings(tmp_path: Path) -> Settings:
                 "releases": "https://api.github.com/repos/tlaplus/tlaplus/releases",
             }
         },
-        tlc={"java_class": "tlc2.TLC"},
-        # check_env_opts validator might run, simpler to provide explicit opts if needed,
-        # or rely on default empty list if env var not set.
-        java={"min_version": 11, "opts": []},
         workspace={
-            "root": str(tmp_path),
-            "modules_dir": "modules",
+            "root": ".",
             "spec_dir": "spec",
+            "modules_dir": "modules",
             "classes_dir": "classes",
         },
+        tlc={
+            "java_class": "tlc2.TLC",
+            "overrides_class": "tlc2.overrides.TLCOverrides",
+        },
+        java={"min_version": 11, "opts": []},
     )
 
 
 @pytest.fixture
 def mock_load_config(mocker, base_settings):
-    """
-    Patches tlaplus_cli.config.loader.load_config to return base_settings.
-    Also patches consumers in specific modules if they import it directly.
-    """
+    """Mocks load_config to return base_settings and prevents writing to disk."""
     return mocker.patch("tlaplus_cli.config.loader.load_config", return_value=base_settings)
 
 
@@ -87,11 +55,11 @@ def mock_cache(mocker, tmp_path):
     """Point cache_dir to a temporary directory."""
     mocker.patch("tlaplus_cli.config.loader.cache_dir", return_value=tmp_path)
     # Patch modules that might have already imported cache_dir
-    mocker.patch("tlaplus_cli.versioning.paths.cache_dir", return_value=tmp_path)
+    mocker.patch("tlaplus_cli.versioning.paths.cache_dir", return_value=tmp_path, create=True)
     # tlc.compiler DOES import cache_dir
-    mocker.patch("tlaplus_cli.tlc.compiler.cache_dir", return_value=tmp_path)
+    mocker.patch("tlaplus_cli.tlc.compiler.cache_dir", return_value=tmp_path, create=True)
     # New command modules
-    mocker.patch("tlaplus_cli.cmd.tools.uninstall.cache_dir", return_value=tmp_path)
+    mocker.patch("tlaplus_cli.cmd.tools.uninstall.cache_dir", return_value=tmp_path, create=True)
     mocker.patch("tlaplus_cli.cmd.tools.install.cache_dir", return_value=tmp_path, create=True)
     return tmp_path
 
@@ -100,8 +68,8 @@ def mock_cache(mocker, tmp_path):
 def make_installed_version(mock_cache):
     """Factory fixture to create pre-installed versions."""
 
-    def _make(name, sha, *, meta=None):
-        tools_dir = mock_cache / "tools"
+    def _make(name, sha, meta=None):
+        tools_dir = (mock_cache / "tools").absolute()
         tools_dir.mkdir(parents=True, exist_ok=True)
         version_dir = tools_dir / f"{name}-{sha}"
         version_dir.mkdir(exist_ok=True)
@@ -111,3 +79,15 @@ def make_installed_version(mock_cache):
         return version_dir
 
     return _make
+
+
+@pytest.fixture
+def java_available(mocker):
+    """Mock shutil.which to find 'java'."""
+    return mocker.patch("shutil.which", side_effect=lambda x: "/usr/bin/java" if x == "java" else None)
+
+
+@pytest.fixture
+def javac_available(mocker):
+    """Mock shutil.which to find 'javac'."""
+    return mocker.patch("shutil.which", side_effect=lambda x: "/usr/bin/javac" if x == "javac" else None)

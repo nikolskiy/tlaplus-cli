@@ -4,8 +4,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-import typer
-
+from tlaplus_cli.ui import warn
 from tlaplus_cli.versioning.schema import RemoteVersion
 
 
@@ -15,9 +14,8 @@ def _utc_now_iso() -> str:
     return now.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def write_version_metadata(version_dir: Path, target: RemoteVersion) -> None:
-    """Write the meta-tla2tools.json file for a downloaded version."""
-    tlc2_version_string = ""
+def _extract_tlc_version(version_dir: Path) -> str:
+    """Run java to get the TLC version string."""
     try:
         result = subprocess.run(
             ["java", "-cp", "tla2tools.jar", "tlc2.TLC", "-version"],
@@ -27,11 +25,25 @@ def write_version_metadata(version_dir: Path, target: RemoteVersion) -> None:
             check=False,
         )
         if result.stdout:
-            tlc2_version_string = result.stdout.strip().split("\n")[0]
-    except Exception as e:
-        typer.echo(f"⚠ Warning: Failed to extract TLC version string: {e}", err=True)
+            return result.stdout.strip().split("\n")[0]
+    except (subprocess.SubprocessError, OSError) as e:
+        warn(f"Failed to extract TLC version string: {e}")
+    return ""
 
+
+def _write_metadata(version_dir: Path, metadata: dict[str, Any]) -> None:
+    """Write metadata dict to meta-tla2tools.json."""
     meta_file = version_dir / "meta-tla2tools.json"
+    try:
+        with meta_file.open("w") as f:
+            json.dump(metadata, f, indent=2)
+    except OSError as e:
+        warn(f"Failed to write metadata: {e}")
+
+
+def write_version_metadata(version_dir: Path, target: RemoteVersion) -> None:
+    """Write the meta-tla2tools.json file for a downloaded version."""
+    tlc2_version_string = _extract_tlc_version(version_dir)
     metadata = {
         "tag_name": target.name,
         "sha": target.full_sha,
@@ -40,12 +52,7 @@ def write_version_metadata(version_dir: Path, target: RemoteVersion) -> None:
         "prerelease": target.prerelease,
         "download_url": target.jar_download_url,
     }
-
-    try:
-        with meta_file.open("w") as f:
-            json.dump(metadata, f, indent=2)
-    except Exception as e:
-        typer.echo(f"⚠ Warning: Failed to write metadata: {e}", err=True)
+    _write_metadata(version_dir, metadata)
 
 
 def read_version_metadata(version_dir: Path) -> dict[str, Any] | None:
@@ -60,7 +67,7 @@ def read_version_metadata(version_dir: Path) -> dict[str, Any] | None:
         with meta_file.open("r") as f:
             data: dict[str, Any] = json.load(f)
             return data
-    except Exception:
+    except (json.JSONDecodeError, OSError):
         return None
 
 
@@ -72,21 +79,7 @@ def write_version_metadata_from_url(
     url: str,
 ) -> None:
     """Write meta-tla2tools.json for a URL-sourced install."""
-    tlc2_version_string = ""
-    try:
-        result = subprocess.run(
-            ["java", "-cp", "tla2tools.jar", "tlc2.TLC", "-version"],
-            cwd=version_dir,
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        if result.stdout:
-            tlc2_version_string = result.stdout.strip().split("\n")[0]
-    except Exception as e:
-        typer.echo(f"Warning: Failed to extract TLC version string: {e}", err=True)
-
-    meta_file = version_dir / "meta-tla2tools.json"
+    tlc2_version_string = _extract_tlc_version(version_dir)
     metadata = {
         "tag_name": version_name,
         "sha": "",
@@ -96,9 +89,4 @@ def write_version_metadata_from_url(
         "download_url": url,
         "tag": tag,
     }
-
-    try:
-        with meta_file.open("w") as f:
-            json.dump(metadata, f, indent=2)
-    except Exception as e:
-        typer.echo(f"Warning: Failed to write metadata: {e}", err=True)
+    _write_metadata(version_dir, metadata)

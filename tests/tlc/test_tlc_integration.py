@@ -24,6 +24,7 @@ def test_tlc_integration(
     base_settings.workspace.classes_dir = classes_dir
 
     mocker.patch("tlaplus_cli.tlc.runner.load_config", return_value=base_settings)
+    mocker.patch("tlaplus_cli.tlc.runner.validate_java_version")
 
     # We also need to patch build_tlc_module's config loading to compile first
     mocker.patch("tlaplus_cli.tlc.compiler.load_config", return_value=base_settings)

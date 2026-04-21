@@ -2,6 +2,8 @@ import json
 import os
 import time
 
+import requests
+
 from tlaplus_cli.cli import app
 from tlaplus_cli.versioning import FetchStatus, fetch_remote_versions
 
@@ -71,8 +73,7 @@ def test_fetch_remote_versions_stale_fallback(mocker, mock_cache, base_settings)
     old_time = time.time() - 7200  # 2 hours ago
     os.utime(cache_file, (old_time, old_time))
 
-    # Mock API failure
-    mocker.patch("requests.get", side_effect=Exception("API down"))
+    mocker.patch("requests.get", side_effect=requests.RequestException("API down"))
 
     versions, status = fetch_remote_versions(base_settings.tla.urls.tags, base_settings.tla.urls.releases)
 
@@ -86,8 +87,7 @@ def test_fetch_remote_versions_corrupt_cache(mocker, mock_cache, base_settings):
     cache_file = mock_cache / "github_cache.json"
     cache_file.write_text("not json")
 
-    # Mock API failure to see if it handles corrupt cache during fallback
-    mocker.patch("requests.get", side_effect=Exception("API down"))
+    mocker.patch("requests.get", side_effect=requests.RequestException("API down"))
 
     versions, status = fetch_remote_versions(base_settings.tla.urls.tags, base_settings.tla.urls.releases)
 

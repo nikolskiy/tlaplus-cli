@@ -1,4 +1,5 @@
 import pytest
+import requests
 
 from tlaplus_cli.versioning import download_version_from_url
 
@@ -50,7 +51,7 @@ def test_download_version_from_url_cleans_up_on_failure(mocker, mock_cache):
     mocker.patch("tlaplus_cli.versioning.downloader._utc_now_iso", return_value=fake_ts)
     mocker.patch(
         "tlaplus_cli.versioning.downloader.requests.get",
-        side_effect=Exception("network error"),
+        side_effect=requests.RequestException("network error"),
     )
 
     with pytest.raises(Exception, match="network error"):

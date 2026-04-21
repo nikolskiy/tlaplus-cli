@@ -1,9 +1,7 @@
-from pathlib import Path
-
 import typer
 
 from tlaplus_cli.tlc.compiler import get_tlc_jar_path
-from tlaplus_cli.tlc.runner import get_tlc_version, run_tlc
+from tlaplus_cli.tlc.runner import get_tlc_version, resolve_spec_file, run_tlc
 
 
 def version_callback(value: bool) -> None:
@@ -22,6 +20,7 @@ def version_callback(value: bool) -> None:
 
         raise typer.Exit(0)
 
+
 def tlc(
     spec: str = typer.Argument(help="Name of the TLA+ specification (without .tla extension)."),
     version: bool | None = typer.Option(
@@ -37,15 +36,16 @@ def tlc(
         pass
 
     try:
-        # Spec resolution logic to get the file name for display
-        spec_path = Path(spec)
-        candidates = [spec_path, spec_path.with_suffix(".tla"), spec_path.parent / "spec" / (spec_path.name + ".tla")]
-        spec_file = next((c for c in candidates if c.is_file()), None)
-        spec_name = spec_file.name if spec_file else spec
-
-        typer.echo(f"Running TLC on {spec_name} ...")
-        exit_code = run_tlc(spec)
-        raise typer.Exit(exit_code)
+        _, spec_name = resolve_spec_file(spec)
     except FileNotFoundError as e:
         typer.echo(f"Error: {e}", err=True)
         raise typer.Exit(1) from None
+
+    typer.echo(f"Running TLC on {spec_name} ...")
+    try:
+        exit_code = run_tlc(spec)
+    except FileNotFoundError as e:
+        typer.echo(f"Error: {e}", err=True)
+        raise typer.Exit(1) from None
+
+    raise typer.Exit(exit_code)

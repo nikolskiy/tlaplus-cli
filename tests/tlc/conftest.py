@@ -2,15 +2,20 @@ import pytest
 
 
 @pytest.fixture
+def queue_dir(fixtures_dir):
+    return fixtures_dir / "queue"
+
+
+@pytest.fixture
 def setup_naming_env_fixture(mocker):
     """Fixture providing the setup_naming_env helper."""
 
     def _setup(tmp_path, mocker_local, base_settings, fixture_dir):
-        """Configures the mocks and settings for testing Java overrides from a fixture dir."""
-        settings = base_settings.model_copy(deep=True)
+        """Configures environment for naming tests."""
         classes_dir = tmp_path / "classes"
-        classes_dir.mkdir(parents=True, exist_ok=True)
+        classes_dir.mkdir()
 
+        settings = base_settings.model_copy(deep=True)
         settings.workspace.root = fixture_dir
         settings.workspace.modules_dir = "modules"
         settings.workspace.spec_dir = "spec"

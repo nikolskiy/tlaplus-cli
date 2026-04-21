@@ -1,4 +1,5 @@
 import pytest
+import requests
 
 from tlaplus_cli.versioning import RemoteVersion, download_version
 
@@ -14,8 +15,7 @@ def test_download_version_cleanup_on_failure(mocker, mock_cache):
         prerelease=False,
     )
 
-    # Mock requests.get to raise an exception
-    mocker.patch("requests.get", side_effect=Exception("Network error"))
+    mocker.patch("requests.get", side_effect=requests.RequestException("Network error"))
 
     version_dir = mock_cache / "tools" / "v1.8.0-aaaaaaa"
 

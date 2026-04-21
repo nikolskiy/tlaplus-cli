@@ -3,11 +3,16 @@ from pathlib import Path
 from typing import Any
 
 import requests
-import typer
 
 from tlaplus_cli.cache.github import load_github_cache, save_github_cache
+from tlaplus_cli.ui import warn
 from tlaplus_cli.versioning.paths import get_github_cache_file
 from tlaplus_cli.versioning.schema import FetchStatus, RemoteVersion
+
+
+def cast_str(value: Any) -> str:
+    """Safely cast a value to string, returning an empty string if None."""
+    return str(value) if value is not None else ""
 
 
 def _load_from_cache(cache_file: Path) -> list[RemoteVersion] | None:
@@ -17,20 +22,20 @@ def _load_from_cache(cache_file: Path) -> list[RemoteVersion] | None:
 def _fetch_from_api(
     tags_url: str, releases_url: str, per_page: int = 30
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]] | None:
+    params = {"per_page": per_page}
     try:
-        params = {"per_page": per_page}
         tags_response = requests.get(tags_url, params=params, timeout=10)
         tags_response.raise_for_status()
-        tags_data: list[dict[str, Any]] = tags_response.json()
 
         releases_response = requests.get(releases_url, params=params, timeout=10)
         releases_response.raise_for_status()
-        releases_data: list[dict[str, Any]] = releases_response.json()
-    except Exception as e:
-        typer.echo(f"⚠ Warning: Failed to fetch remote versions: {e}", err=True)
+    except requests.RequestException as e:
+        warn(f"Failed to fetch remote versions: {e}")
         return None
-    else:
-        return tags_data, releases_data
+
+    tags_data: list[dict[str, Any]] = tags_response.json()
+    releases_data: list[dict[str, Any]] = releases_response.json()
+    return tags_data, releases_data
 
 
 def _process_remote_versions(
@@ -72,18 +77,20 @@ def _process_remote_versions(
 def fetch_remote_versions(
     tags_url: str, releases_url: str, per_page: int = 30
 ) -> tuple[list[RemoteVersion], FetchStatus]:
+    """Fetch available TLC versions from GitHub API."""
     cache_file = get_github_cache_file()
 
     # Check cache TTL
     if cache_file.exists():
         try:
             mtime = cache_file.stat().st_mtime
+        except OSError as e:
+            warn(f"Failed to check cache age: {e}")
+        else:
             if time.time() - mtime < 3600:
                 cached_data = _load_from_cache(cache_file)
                 if cached_data is not None:
                     return cached_data, FetchStatus.CACHED
-        except Exception as e:
-            typer.echo(f"⚠ Warning: Failed to check cache age: {e}", err=True)
 
     # Fetch from API
     api_data = _fetch_from_api(tags_url, releases_url, per_page)
@@ -101,7 +108,3 @@ def fetch_remote_versions(
     save_github_cache(cache_file, versions)
 
     return versions, FetchStatus.ONLINE
-
-
-def cast_str(value: Any) -> str:
-    return str(value) if value is not None else ""

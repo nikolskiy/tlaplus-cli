@@ -30,7 +30,7 @@ def version_callback(value: bool) -> None:
 
 @app.callback()
 def root(
-    version: bool = typer.Option(
+    version: bool = typer.Option(  # noqa: ARG001
         None,
         "--version",
         "-v",
@@ -42,9 +42,6 @@ def root(
     """TLA+ CLI tool."""
     # Load config early to trigger first-run copy
     load_config()
-    if version:
-        # This branch is effectively redundant due to callback, but keeps type checker happy
-        pass
 
 
 # --- Subcommands ---

@@ -117,7 +117,7 @@ def test_uninstall_all_flag(mock_cache, make_installed_version, runner, mock_loa
     v1 = make_installed_version("v1.8.0", "aaaaaaa")
     v2 = make_installed_version("v1.8.0", "bbbbbbb")
 
-    result = runner.invoke(app, ["tools", "uninstall", "v1.8.0", "--all"])
+    result = runner.invoke(app, ["tools", "uninstall", "v1.8.0", "--all", "-y"])
     assert result.exit_code == 0
     assert not v1.exists()
     assert not v2.exists()
