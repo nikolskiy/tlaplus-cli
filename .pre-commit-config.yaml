@@ -62,6 +62,13 @@ repos:
         types: [python]
         require_serial: true
 
+      - id: bandit
+        name: bandit
+        entry: uv run bandit -c pyproject.toml -r src/tlaplus_cli
+        language: system
+        types: [python]
+        pass_filenames: false
+
       - id: mypy
         name: mypy
         entry: uv run mypy

@@ -62,6 +62,7 @@ dev = [
     "pre-commit>=3.5.0,<4.0.0",
     "pre-commit-hooks>=6.0.0,<7.0.0",
     "twine>=6.0.0,<7.0.0",
+    "bandit>=1.9.4",
 ]
 
 [tool.pytest.ini_options]
@@ -105,10 +106,14 @@ ignore = [
     "PLR0913", # Many arguments are common in tests (fixtures)
 ]
 
+[tool.bandit]
+skips = ["B404", "B603", "B607"]
+
 [tool.poe.tasks]
 check = "pre-commit run --all-files"
-lint = ["lint-ruff", "type-check"]
+lint = ["lint-ruff", "lint-bandit", "type-check"]
 lint-ruff = "ruff check ."
+lint-bandit = "bandit -c pyproject.toml -r src/tlaplus_cli"
 type-check = "mypy ."
 fix = ["format", "lint-fix"]
 format = "ruff format ."
