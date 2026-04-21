@@ -1,12 +1,12 @@
-from tlaplus_cli import config
 from tlaplus_cli.cli import app
+from tlaplus_cli.config import loader as config
 
 
 def test_modules_lib_view_custom(mocker, tmp_path, runner):
     """Test viewing a custom modules lib path."""
     config.load_config.cache_clear()
     config_dir = tmp_path / "config"
-    mocker.patch("tlaplus_cli.config.config_dir", return_value=config_dir)
+    mocker.patch("tlaplus_cli.config.loader.config_dir", return_value=config_dir)
 
     lib_dir = tmp_path / "my_libs"
     lib_dir.mkdir()
@@ -24,8 +24,8 @@ def test_modules_lib_view_default(mocker, tmp_path, runner):
     """Test viewing the default modules lib path when none is set."""
     config.load_config.cache_clear()
     config_dir = tmp_path / "config"
-    mocker.patch("tlaplus_cli.config.config_dir", return_value=config_dir)
-    mocker.patch("tlaplus_cli.build_tlc_module.workspace_root", return_value=tmp_path)
+    mocker.patch("tlaplus_cli.config.loader.config_dir", return_value=config_dir)
+    mocker.patch("tlaplus_cli.cmd.modules.lib.workspace_root", return_value=tmp_path)
 
     # Ensure it's None
     cfg = config.load_config()
@@ -46,7 +46,7 @@ def test_modules_lib_view_default_with_custom_module_path(mocker, tmp_path, runn
     """Test viewing the default modules lib path when custom module_path is set."""
     config.load_config.cache_clear()
     config_dir = tmp_path / "config"
-    mocker.patch("tlaplus_cli.config.config_dir", return_value=config_dir)
+    mocker.patch("tlaplus_cli.config.loader.config_dir", return_value=config_dir)
 
     module_dir = tmp_path / "custom_modules"
     module_dir.mkdir()
@@ -68,7 +68,7 @@ def test_modules_lib_set(mocker, tmp_path, runner):
     """Test setting the modules lib path."""
     config.load_config.cache_clear()
     config_dir = tmp_path / "config"
-    mocker.patch("tlaplus_cli.config.config_dir", return_value=config_dir)
+    mocker.patch("tlaplus_cli.config.loader.config_dir", return_value=config_dir)
 
     lib_dir = tmp_path / "my_libs"
     lib_dir.mkdir()
@@ -87,7 +87,7 @@ def test_modules_lib_reset(mocker, tmp_path, runner):
     """Test resetting the modules lib path."""
     config.load_config.cache_clear()
     config_dir = tmp_path / "config"
-    mocker.patch("tlaplus_cli.config.config_dir", return_value=config_dir)
+    mocker.patch("tlaplus_cli.config.loader.config_dir", return_value=config_dir)
 
     lib_dir = tmp_path / "my_libs"
     lib_dir.mkdir()

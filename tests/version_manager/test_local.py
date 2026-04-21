@@ -1,4 +1,4 @@
-from tlaplus_cli.version_manager import list_local_versions
+from tlaplus_cli.versioning import list_local_versions
 
 
 def test_list_local_versions_timestamp_tag(mock_cache):

@@ -1,4 +1,4 @@
-from tlaplus_cli.version_manager import _migrate_legacy_pin, get_pinned_path, get_tools_dir
+from tlaplus_cli.versioning import _migrate_legacy_pin, get_pinned_path, get_tools_dir
 
 
 def test_migrate_legacy_dir(mock_cache):

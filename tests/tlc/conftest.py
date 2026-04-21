@@ -16,8 +16,8 @@ def setup_naming_env_fixture(mocker):
         settings.workspace.spec_dir = "spec"
         settings.workspace.classes_dir = str(classes_dir)
 
-        mocker_local.patch("tlaplus_cli.build_tlc_module.load_config", return_value=settings)
-        mocker_local.patch("tlaplus_cli.build_tlc_module.workspace_root", return_value=fixture_dir)
-        mocker_local.patch("tlaplus_cli.run_tlc.load_config", return_value=settings)
+        mocker_local.patch("tlaplus_cli.tlc.compiler.load_config", return_value=settings)
+        mocker_local.patch("tlaplus_cli.tlc.compiler.workspace_root", return_value=fixture_dir)
+        mocker_local.patch("tlaplus_cli.tlc.runner.load_config", return_value=settings)
 
     return _setup

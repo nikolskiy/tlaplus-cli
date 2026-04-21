@@ -14,6 +14,22 @@
 
 ---
 
+## Project Architecture & Directory Structure
+
+The `tlaplus_cli` codebase is organized to strictly separate the command-line interface from the core business logic:
+
+1. **`cmd/` Directory (CLI Layer):**
+   - The `cmd/` directory represents the concept of providing command-line call support and directly mirrors the actual structure of `tla` CLI commands (e.g., `tla tools list` is wired in `cmd/tools/list.py`).
+   - Command groups are defined as directories containing an `__init__.py` (where the `typer.Typer` app is constructed). Actionable leaf commands are standalone `.py` files inside their respective group directory.
+   - Code inside `cmd/` should **only** handle argument parsing, user output/input (`typer.echo`, `typer.prompt`), and routing. It must not house domain logic.
+
+2. **Concept Directories (Core Logic Layer):**
+   - Business and domain logic resides in top-level concept directories (e.g., `config/`, `cache/`, `versioning/`, `java/`, `tlc/`).
+   - These directories do not have command representations and must remain decoupled from `Typer` application logic.
+   - When adding new functionality, build the core logic in entirely testable concept modules, and import them into the relevant leaf command in `cmd/`.
+
+---
+
 ## Best Practices
 
 ### 1. Test Fixtures — Real but Stripped API Data

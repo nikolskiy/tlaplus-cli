@@ -23,12 +23,12 @@ def test_tlc_integration(
     base_settings.workspace.root = queue_dir
     base_settings.workspace.classes_dir = classes_dir
 
-    mocker.patch("tlaplus_cli.run_tlc.load_config", return_value=base_settings)
+    mocker.patch("tlaplus_cli.tlc.runner.load_config", return_value=base_settings)
 
     # We also need to patch build_tlc_module's config loading to compile first
-    mocker.patch("tlaplus_cli.build_tlc_module.load_config", return_value=base_settings)
+    mocker.patch("tlaplus_cli.tlc.compiler.load_config", return_value=base_settings)
     # Patch workspace_root for build_tlc_module
-    mocker.patch("tlaplus_cli.build_tlc_module.workspace_root", return_value=queue_dir)
+    mocker.patch("tlaplus_cli.tlc.compiler.workspace_root", return_value=queue_dir)
 
     # 1. Compile modules
     res_build = runner.invoke(app, ["modules", "build"])

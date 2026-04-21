@@ -2,7 +2,7 @@ import json
 import os
 import time
 
-from tlaplus_cli.version_manager import LocalVersion, resolve_latest_version
+from tlaplus_cli.versioning import LocalVersion, resolve_latest_version
 
 
 def test_returns_none_when_no_versions():

@@ -3,7 +3,7 @@ import os
 import time
 
 from tlaplus_cli.cli import app
-from tlaplus_cli.version_manager import FetchStatus, fetch_remote_versions
+from tlaplus_cli.versioning import FetchStatus, fetch_remote_versions
 
 
 def test_fetch_cache_clear(mock_load_config, mock_cache, runner):

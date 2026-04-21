@@ -2,7 +2,7 @@ from tlaplus_cli.cli import app
 
 
 def test_tlc_meta_sync(mock_github_api, mock_cache, mock_load_config, installed_v180, mocker, runner):
-    mock_write = mocker.patch("tlaplus_cli.tools_manager.write_version_metadata")
+    mock_write = mocker.patch("tlaplus_cli.cmd.tools.meta.sync.write_version_metadata")
     result = runner.invoke(app, ["tools", "meta", "sync"])
     assert result.exit_code == 0
     assert "Synced metadata for v1.8.0-aaaaaaa" in result.stdout
@@ -19,7 +19,7 @@ def test_meta_sync_skips_url_installed_version(
     ts = "2026-04-06T12:51:28Z"
     make_installed_version("v1.9.0", ts)
 
-    mocker.patch("tlaplus_cli.tools_manager.write_version_metadata")
+    mocker.patch("tlaplus_cli.cmd.tools.meta.sync.write_version_metadata")
 
     result = runner.invoke(app, ["tools", "meta", "sync"])
     assert result.exit_code == 0

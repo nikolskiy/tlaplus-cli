@@ -36,7 +36,7 @@ def mock_github_api(mocker):
             return mock_tags
         return mock_releases
 
-    mocker.patch("tlaplus_cli.version_manager.requests.get", side_effect=side_effect)
+    mocker.patch("tlaplus_cli.versioning.api.requests.get", side_effect=side_effect)
 
 
 @pytest.fixture
@@ -54,7 +54,7 @@ def mock_download(mocker, mock_cache):
         (version_dir / "tla2tools.jar").write_bytes(b"fake jar content")
         return version_dir
 
-    mocker.patch("tlaplus_cli.tools_manager.download_version", side_effect=_download)
+    mocker.patch("tlaplus_cli.versioning.download_version", side_effect=_download)
     return _download
 
 

@@ -1,6 +1,6 @@
 import pytest
 
-from tlaplus_cli.version_manager import RemoteVersion, download_version
+from tlaplus_cli.versioning import RemoteVersion, download_version
 
 
 def test_download_version_cleanup_on_failure(mocker, mock_cache):
@@ -46,7 +46,7 @@ def test_download_version_force_removes_existing(mocker, mock_cache):
     mock_response.iter_content.return_value = [b"new content"]
     mock_response.headers = {}
     mocker.patch("requests.get", return_value=mock_response)
-    mocker.patch("tlaplus_cli.version_manager.write_version_metadata")
+    mocker.patch("tlaplus_cli.versioning.downloader.write_version_metadata")
 
     download_version(target, force=True)
 

@@ -1,6 +1,6 @@
 import pytest
 
-from tlaplus_cli.version_manager import download_version_from_url
+from tlaplus_cli.versioning import download_version_from_url
 
 
 @pytest.fixture
@@ -8,13 +8,13 @@ def mock_url_download(mocker):
     url = "https://example.com/v1.9.0/tla2tools.jar"
     fake_ts = "2026-04-06T12:51:28Z"
 
-    mocker.patch("tlaplus_cli.version_manager._utc_now_iso", return_value=fake_ts)
+    mocker.patch("tlaplus_cli.versioning.downloader._utc_now_iso", return_value=fake_ts)
     mock_response = mocker.MagicMock()
     mock_response.raise_for_status = mocker.MagicMock()
     mock_response.headers = {"content-length": "16"}
     mock_response.iter_content.return_value = [b"fake jar content"]
-    mocker.patch("tlaplus_cli.version_manager.requests.get", return_value=mock_response)
-    mocker.patch("tlaplus_cli.version_manager.write_version_metadata_from_url")
+    mocker.patch("tlaplus_cli.versioning.downloader.requests.get", return_value=mock_response)
+    mocker.patch("tlaplus_cli.versioning.downloader.write_version_metadata_from_url")
     return url, fake_ts
 
 
@@ -47,9 +47,9 @@ def test_download_version_from_url_cleans_up_on_failure(mocker, mock_cache):
     """The version directory is removed if the download fails."""
     url = "https://example.com/v1.9.0/tla2tools.jar"
     fake_ts = "2026-04-06T12:51:28Z"
-    mocker.patch("tlaplus_cli.version_manager._utc_now_iso", return_value=fake_ts)
+    mocker.patch("tlaplus_cli.versioning.downloader._utc_now_iso", return_value=fake_ts)
     mocker.patch(
-        "tlaplus_cli.version_manager.requests.get",
+        "tlaplus_cli.versioning.downloader.requests.get",
         side_effect=Exception("network error"),
     )
 

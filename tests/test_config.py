@@ -1,4 +1,4 @@
-from tlaplus_cli import config
+from tlaplus_cli.config import loader as config
 
 
 def test_config_paths(mocker, tmp_path):
@@ -14,7 +14,7 @@ def test_config_paths(mocker, tmp_path):
 def test_ensure_config_creates_default(mocker, tmp_path):
     """_ensure_config creates the config file if it doesn't exist."""
     config_dir = tmp_path / "config"
-    mocker.patch("tlaplus_cli.config.config_dir", return_value=config_dir)
+    mocker.patch("tlaplus_cli.config.loader.config_dir", return_value=config_dir)
     config_path = config_dir / "config.yaml"
 
     assert not config_path.exists()
@@ -29,7 +29,7 @@ def test_load_config_caching(mocker, tmp_path):
     config.load_config.cache_clear()
 
     config_dir = tmp_path / "config"
-    mocker.patch("tlaplus_cli.config.config_dir", return_value=config_dir)
+    mocker.patch("tlaplus_cli.config.loader.config_dir", return_value=config_dir)
     config._ensure_config()
 
     # First call
@@ -44,7 +44,7 @@ def test_workspace_root_absolute(mocker, tmp_path):
     abs_path = (tmp_path / "my_ws").absolute()
     mock_settings = mocker.MagicMock()
     mock_settings.workspace.root = str(abs_path)
-    mocker.patch("tlaplus_cli.config.load_config", return_value=mock_settings)
+    mocker.patch("tlaplus_cli.config.loader.load_config", return_value=mock_settings)
 
     assert config.workspace_root() == abs_path
 
@@ -53,7 +53,7 @@ def test_load_module_path(mocker, tmp_path):
     """Test that module_path can be loaded from config."""
     config.load_config.cache_clear()
     config_dir = tmp_path / "config"
-    mocker.patch("tlaplus_cli.config.config_dir", return_value=config_dir)
+    mocker.patch("tlaplus_cli.config.loader.config_dir", return_value=config_dir)
     config_path = config_dir / "config.yaml"
     config_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -83,7 +83,7 @@ def test_save_config(mocker, tmp_path):
     """Test saving config preserves module_path and uses deep copy."""
     config.load_config.cache_clear()
     config_dir = tmp_path / "config"
-    mocker.patch("tlaplus_cli.config.config_dir", return_value=config_dir)
+    mocker.patch("tlaplus_cli.config.loader.config_dir", return_value=config_dir)
     config_path = config_dir / "config.yaml"
     config_dir.mkdir(parents=True, exist_ok=True)
 

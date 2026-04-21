@@ -1,6 +1,6 @@
 import json
 
-from tlaplus_cli.version_manager import FetchStatus, fetch_remote_versions
+from tlaplus_cli.versioning import FetchStatus, fetch_remote_versions
 
 
 def test_fetch_remote_versions_parses_fixtures(fixtures_dir, mocker, mock_cache):

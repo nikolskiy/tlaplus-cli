@@ -1,6 +1,6 @@
 import pytest
 
-from tlaplus_cli.version_manager import extract_version_from_url, is_url
+from tlaplus_cli.versioning import extract_version_from_url, is_url
 
 
 @pytest.mark.parametrize(

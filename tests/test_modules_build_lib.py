@@ -1,13 +1,13 @@
-from tlaplus_cli import config
 from tlaplus_cli.cli import app
+from tlaplus_cli.config import loader as config
 
 
 def test_build_classpath_with_custom_lib(mocker, tmp_path, runner):
     """Test that build command uses custom module_lib_path in classpath."""
     config.load_config.cache_clear()
     config_dir = tmp_path / "config"
-    mocker.patch("tlaplus_cli.config.config_dir", return_value=config_dir)
-    mocker.patch("tlaplus_cli.build_tlc_module.workspace_root", return_value=tmp_path)
+    mocker.patch("tlaplus_cli.config.loader.config_dir", return_value=config_dir)
+    mocker.patch("tlaplus_cli.tlc.compiler.workspace_root", return_value=tmp_path)
 
     # Mock subprocess.run to avoid actual compilation
     mock_run = mocker.patch("subprocess.run")
@@ -28,8 +28,8 @@ def test_build_classpath_with_custom_lib(mocker, tmp_path, runner):
     config.save_config(cfg)
 
     # Mock tla2tools.jar existence
-    mocker.patch("tlaplus_cli.build_tlc_module.get_pinned_version_dir", return_value=None)
-    mocker.patch("tlaplus_cli.build_tlc_module.cache_dir", return_value=tmp_path / "cache")
+    mocker.patch("tlaplus_cli.tlc.compiler.get_pinned_version_dir", return_value=None)
+    mocker.patch("tlaplus_cli.tlc.compiler.cache_dir", return_value=tmp_path / "cache")
     (tmp_path / "cache").mkdir()
     tla2tools = tmp_path / "cache" / "tla2tools.jar"
     tla2tools.touch()
@@ -50,8 +50,8 @@ def test_build_classpath_fallback_lib(mocker, tmp_path, runner):
     """Test that build command uses fallback lib (inside modules_dir) when not configured."""
     config.load_config.cache_clear()
     config_dir = tmp_path / "config"
-    mocker.patch("tlaplus_cli.config.config_dir", return_value=config_dir)
-    mocker.patch("tlaplus_cli.build_tlc_module.workspace_root", return_value=tmp_path)
+    mocker.patch("tlaplus_cli.config.loader.config_dir", return_value=config_dir)
+    mocker.patch("tlaplus_cli.tlc.compiler.workspace_root", return_value=tmp_path)
 
     mock_run = mocker.patch("subprocess.run")
 
@@ -70,8 +70,8 @@ def test_build_classpath_fallback_lib(mocker, tmp_path, runner):
     cfg.module_lib_path = None
     config.save_config(cfg)
 
-    mocker.patch("tlaplus_cli.build_tlc_module.get_pinned_version_dir", return_value=None)
-    mocker.patch("tlaplus_cli.build_tlc_module.cache_dir", return_value=tmp_path / "cache")
+    mocker.patch("tlaplus_cli.tlc.compiler.get_pinned_version_dir", return_value=None)
+    mocker.patch("tlaplus_cli.tlc.compiler.cache_dir", return_value=tmp_path / "cache")
     (tmp_path / "cache").mkdir()
     tla2tools = tmp_path / "cache" / "tla2tools.jar"
     tla2tools.touch()

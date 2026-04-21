@@ -1,10 +1,8 @@
-"""Check minimal Java version."""
+"""Java inspection utilities."""
 
 import re
 import shutil
 import subprocess
-
-import typer
 
 
 def get_java_version() -> str | None:
@@ -26,6 +24,8 @@ def get_java_version() -> str | None:
 
         # Look for version string like "1.8.0_202" or "11.0.2" or "17"
         # Output typically starts with: openjdk version "11.0.2" ...
+        # Correctly handle subprocess outputs as per docs/development.md
+        # but here we use regex on the whole output which is fine.
         match = re.search(r'version "(\d+(\.\d+)*(_\d+)?(-\w+)?)"', output)
         if match:
             return match.group(1)
@@ -58,25 +58,24 @@ def parse_java_version(version_str: str) -> int:
     return int(parts[0])
 
 
-def check_java_version(min_version: int) -> None:
+def validate_java_version(min_version: int) -> None:
     """Check if installed Java version is at least min_version.
 
-    Exits with error if check fails.
+    Raises:
+        RuntimeError: if Java is not found or version is too low.
     """
     version_str = get_java_version()
 
     if not version_str:
-        typer.echo("Error: Java is not installed or not found in PATH.", err=True)
-        typer.echo(f"Please install Java {min_version} or higher.", err=True)
-        raise typer.Exit(1)
+        msg = f"Java {min_version}+ not found. Please install Java."
+        raise RuntimeError(msg)
 
     try:
         major_version = parse_java_version(version_str)
     except (ValueError, IndexError):
-        typer.echo(f"Warning: Could not parse Java version from '{version_str}'. Assuming compatible.", err=True)
+        # Warning is handled in CLI
         return
 
     if major_version < min_version:
-        typer.echo(f"Error: Java version {min_version} or higher is required.", err=True)
-        typer.echo(f"Found version {version_str} (major version {major_version}).", err=True)
-        raise typer.Exit(1)
+        msg = f"Java {min_version}+ required; found {version_str}."
+        raise RuntimeError(msg)

@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
-from tlaplus_cli.settings import Settings
+from tlaplus_cli.config.schema import Settings
 
 PROJECT_ROOT = Path(__file__).parent.parent
 FIXTURES_DIR = PROJECT_ROOT / "tests/fixtures"
@@ -76,21 +76,23 @@ def base_settings(tmp_path: Path) -> Settings:
 @pytest.fixture
 def mock_load_config(mocker, base_settings):
     """
-    Patches tlaplus_cli.config.load_config to return base_settings.
+    Patches tlaplus_cli.config.loader.load_config to return base_settings.
     Also patches consumers in specific modules if they import it directly.
     """
-    return mocker.patch("tlaplus_cli.config.load_config", return_value=base_settings)
+    return mocker.patch("tlaplus_cli.config.loader.load_config", return_value=base_settings)
 
 
 @pytest.fixture
 def mock_cache(mocker, tmp_path):
     """Point cache_dir to a temporary directory."""
-    mocker.patch("tlaplus_cli.config.cache_dir", return_value=tmp_path)
+    mocker.patch("tlaplus_cli.config.loader.cache_dir", return_value=tmp_path)
     # Patch modules that might have already imported cache_dir
-    mocker.patch("tlaplus_cli.version_manager.cache_dir", return_value=tmp_path)
-    mocker.patch("tlaplus_cli.tools_manager.cache_dir", return_value=tmp_path)
-    mocker.patch("tlaplus_cli.run_tlc.cache_dir", return_value=tmp_path)
-    mocker.patch("tlaplus_cli.build_tlc_module.cache_dir", return_value=tmp_path)
+    mocker.patch("tlaplus_cli.versioning.paths.cache_dir", return_value=tmp_path)
+    # tlc.compiler DOES import cache_dir
+    mocker.patch("tlaplus_cli.tlc.compiler.cache_dir", return_value=tmp_path)
+    # New command modules
+    mocker.patch("tlaplus_cli.cmd.tools.uninstall.cache_dir", return_value=tmp_path)
+    mocker.patch("tlaplus_cli.cmd.tools.install.cache_dir", return_value=tmp_path, create=True)
     return tmp_path
 
 

@@ -4,7 +4,7 @@ import pytest
 import typer
 
 from tlaplus_cli.cli import app
-from tlaplus_cli.tools_manager import _resolve_upgrade_target
+from tlaplus_cli.cmd.tools.upgrade import _resolve_upgrade_target
 
 
 def test_tlc_upgrade(mock_github_api, mock_download, mock_load_config, mock_cache, make_installed_version, runner):

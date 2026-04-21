@@ -4,13 +4,13 @@ import importlib.metadata
 
 import typer
 
-from tlaplus_cli.build_tlc_module import build as build_tlc_cmd
-from tlaplus_cli.build_tlc_module import set_modules_lib_path, set_modules_path
-from tlaplus_cli.check_java import check_java_version, get_java_version
-from tlaplus_cli.config import load_config
-from tlaplus_cli.config_cli import config_app
-from tlaplus_cli.run_tlc import tlc as run_tlc_cmd
-from tlaplus_cli.tools_manager import fetch_cache_app, tools_app
+from tlaplus_cli.cmd.check_java import check_java
+from tlaplus_cli.cmd.config import app as config_app
+from tlaplus_cli.cmd.fetch_cache import app as fetch_cache_app
+from tlaplus_cli.cmd.modules import app as modules_app
+from tlaplus_cli.cmd.tlc import tlc as run_tlc_cmd
+from tlaplus_cli.cmd.tools import app as tools_app
+from tlaplus_cli.config.loader import load_config
 
 app = typer.Typer(
     name="tla",
@@ -49,29 +49,13 @@ def root(
 
 # --- Subcommands ---
 
-# Attach typer subgroups
-modules_app = typer.Typer(name="modules", help="Manage TLA+ Java modules.", no_args_is_help=True)
-modules_app.command(name="build")(build_tlc_cmd)
-modules_app.command(name="path")(set_modules_path)
-modules_app.command(name="lib")(set_modules_lib_path)
-
 app.add_typer(modules_app, name="modules")
 app.add_typer(tools_app, name="tools")
 app.add_typer(fetch_cache_app, name="fetch-cache")
 app.add_typer(config_app, name="config")
 
 app.command(name="tlc")(run_tlc_cmd)
-
-
-@app.command(name="check-java")
-def check_java() -> None:
-    """Check if Java is installed and meets the minimum version requirement."""
-    config = load_config()
-    version = get_java_version()
-    if version:
-        typer.echo(f"Detected Java version: {version}")
-    check_java_version(config.java.min_version)
-    typer.echo(f"Java version is compatible (>= {config.java.min_version}).")
+app.command(name="check-java")(check_java)
 
 
 def main() -> None:

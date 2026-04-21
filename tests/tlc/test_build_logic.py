@@ -9,17 +9,17 @@ def test_build_with_explicit_path(mocker, tmp_path, base_settings, runner):
     (modules_dir / "Foo.java").write_text("class Foo {}")
 
     settings = base_settings.model_copy(deep=True)
-    mocker.patch("tlaplus_cli.build_tlc_module.load_config", return_value=settings)
-    mocker.patch("tlaplus_cli.build_tlc_module.workspace_root", return_value=tmp_path)
+    mocker.patch("tlaplus_cli.tlc.compiler.load_config", return_value=settings)
+    mocker.patch("tlaplus_cli.tlc.compiler.workspace_root", return_value=tmp_path)
 
-    mock_run = mocker.patch("tlaplus_cli.build_tlc_module.subprocess.run")
+    mock_run = mocker.patch("tlaplus_cli.tlc.compiler.subprocess.run")
     mock_run.return_value.returncode = 0
 
     # Patch jar path to exist
     pinned_dir = tmp_path / "tools" / "v1.8.0"
     pinned_dir.mkdir(parents=True)
     (pinned_dir / "tla2tools.jar").write_bytes(b"fake")
-    mocker.patch("tlaplus_cli.build_tlc_module.get_pinned_version_dir", return_value=pinned_dir)
+    mocker.patch("tlaplus_cli.tlc.compiler.get_pinned_version_dir", return_value=pinned_dir)
 
     result = runner.invoke(app, ["modules", "build", str(project_dir)])
     assert result.exit_code == 0
@@ -39,17 +39,17 @@ def test_build_without_path_uses_workspace_root(mocker, tmp_path, base_settings,
 
     settings = base_settings.model_copy(deep=True)
     settings.workspace.root = project_dir
-    mocker.patch("tlaplus_cli.build_tlc_module.load_config", return_value=settings)
-    mocker.patch("tlaplus_cli.build_tlc_module.workspace_root", return_value=project_dir)
+    mocker.patch("tlaplus_cli.tlc.compiler.load_config", return_value=settings)
+    mocker.patch("tlaplus_cli.tlc.compiler.workspace_root", return_value=project_dir)
 
-    mock_run = mocker.patch("tlaplus_cli.build_tlc_module.subprocess.run")
+    mock_run = mocker.patch("tlaplus_cli.tlc.compiler.subprocess.run")
     mock_run.return_value.returncode = 0
 
     # Patch jar path to exist
     pinned_dir = tmp_path / "tools" / "v1.8.0"
     pinned_dir.mkdir(parents=True)
     (pinned_dir / "tla2tools.jar").write_bytes(b"fake")
-    mocker.patch("tlaplus_cli.build_tlc_module.get_pinned_version_dir", return_value=pinned_dir)
+    mocker.patch("tlaplus_cli.tlc.compiler.get_pinned_version_dir", return_value=pinned_dir)
 
     result = runner.invoke(app, ["modules", "build"])
     assert result.exit_code == 0
@@ -76,10 +76,10 @@ def test_build_includes_lib_jars_in_classpath(mocker, tmp_path, base_settings, r
     tla_jar.write_bytes(b"fake")
 
     settings = base_settings.model_copy(deep=True)
-    mocker.patch("tlaplus_cli.build_tlc_module.load_config", return_value=settings)
-    mocker.patch("tlaplus_cli.build_tlc_module.get_pinned_version_dir", return_value=pinned_dir)
+    mocker.patch("tlaplus_cli.tlc.compiler.load_config", return_value=settings)
+    mocker.patch("tlaplus_cli.tlc.compiler.get_pinned_version_dir", return_value=pinned_dir)
 
-    mock_run = mocker.patch("tlaplus_cli.build_tlc_module.subprocess.run")
+    mock_run = mocker.patch("tlaplus_cli.tlc.compiler.subprocess.run")
     mock_run.return_value.returncode = 0
 
     result = runner.invoke(app, ["modules", "build", str(project_dir)])
