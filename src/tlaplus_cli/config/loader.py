@@ -61,9 +61,7 @@ def _default_config_content() -> str:
     """Read the default config shipped with the package."""
     # Safer than __file__, correctly handles zipped wheels and zipapps.
     return (
-        importlib.resources.files("tlaplus_cli.resources")
-        .joinpath("default_config.yaml")
-        .read_text(encoding="utf-8")
+        importlib.resources.files("tlaplus_cli.resources").joinpath("default_config.yaml").read_text(encoding="utf-8")
     )
 
 

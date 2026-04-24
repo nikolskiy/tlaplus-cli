@@ -34,7 +34,7 @@ def _parse_semver(name: str) -> tuple[int, int, int] | None:
     return None
 
 
-def _version_sort_key(lv: LocalVersion) -> tuple[int, tuple[int, int, int], str, float]:
+def _version_sort_key(lv: LocalVersion) -> tuple[int, tuple[int, int, int], str, float, str]:
     """
     Build a sort key for determining the "latest" installed version.
 
@@ -43,6 +43,7 @@ def _version_sort_key(lv: LocalVersion) -> tuple[int, tuple[int, int, int], str,
       1: semver      — (major, minor, patch) tuple
       2: published_at — ISO-8601 string from metadata (lexicographic comparison works)
       3: mtime       — directory last-modified timestamp
+      4: name        — directory name as a fallback for pure determinism
     """
     semver = _parse_semver(lv.name)
     has_semver = 1 if semver else 0
@@ -58,7 +59,7 @@ def _version_sort_key(lv: LocalVersion) -> tuple[int, tuple[int, int, int], str,
     except OSError:
         mtime = 0.0
 
-    return (has_semver, semver_tuple, published_at, mtime)
+    return (has_semver, semver_tuple, published_at, mtime, lv.path.name)
 
 
 def resolve_latest_version(versions: Sequence[LocalVersion]) -> LocalVersion | None:
@@ -86,4 +87,6 @@ def list_local_versions() -> list[LocalVersion]:
             parts = d.name.split("-", 1)
             if len(parts) == 2:
                 result.append(LocalVersion(name=parts[0], short_sha=parts[1], path=d))
+
+    result.sort(key=_version_sort_key, reverse=True)
     return result

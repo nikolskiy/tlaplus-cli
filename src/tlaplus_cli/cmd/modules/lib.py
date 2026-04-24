@@ -10,7 +10,7 @@ from tlaplus_cli.config.loader import load_config, save_config, workspace_root
 def set_modules_lib_path(
     path: str | None = typer.Argument(
         None, help="Path to the custom Java modules dependencies directory, or 'none' to reset."
-    )
+    ),
 ) -> None:
     """Configure or view a persistent custom Java modules dependencies (lib) path."""
     config_obj = load_config()

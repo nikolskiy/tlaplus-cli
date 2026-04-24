@@ -10,7 +10,7 @@ from tlaplus_cli.config.loader import config_path, load_config
 
 @app.command(name="edit")
 def edit_config(
-    editor: str | None = typer.Argument(None, help="The editor to use (defaults to $EDITOR or 'vim').")
+    editor: str | None = typer.Argument(None, help="The editor to use (defaults to $EDITOR or 'vim')."),
 ) -> None:
     """Open the configuration file in an editor."""
     cp = config_path()

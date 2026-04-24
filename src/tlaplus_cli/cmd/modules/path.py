@@ -8,7 +8,7 @@ from tlaplus_cli.config.loader import load_config, save_config, workspace_root
 
 @app.command(name="path")
 def set_modules_path(
-    path: str | None = typer.Argument(None, help="Path to the custom Java modules directory, or 'none' to reset.")
+    path: str | None = typer.Argument(None, help="Path to the custom Java modules directory, or 'none' to reset."),
 ) -> None:
     """Configure or view a persistent custom Java modules source path."""
     config_obj = load_config()

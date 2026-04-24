@@ -46,6 +46,7 @@ def test_build_classpath_with_custom_lib(mocker, tmp_path, runner):
     assert str(jar1) in classpath
     assert str(tla2tools) in classpath
 
+
 def test_build_classpath_fallback_lib(mocker, tmp_path, runner):
     """Test that build command uses fallback lib (inside modules_dir) when not configured."""
     config.load_config.cache_clear()

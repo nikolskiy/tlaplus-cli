@@ -26,9 +26,7 @@ def _auto_pin_if_needed(version_dir: Path) -> None:
 
 @app.command()
 def install(
-    version: str = typer.Argument(
-        None, help="Version tag (e.g. 'v1.8.0') or a direct URL to tla2tools.jar."
-    ),
+    version: str = typer.Argument(None, help="Version tag (e.g. 'v1.8.0') or a direct URL to tla2tools.jar."),
     force: bool = typer.Option(False, "--force", "-f", help="Re-download if already installed."),
 ) -> None:
     """Download and install a specific TLC version."""
@@ -45,9 +43,7 @@ def install(
             return
 
     config = load_config()
-    versions, status = fetch_remote_versions(
-        config.tla.urls.tags, config.tla.urls.releases, config.tla.urls.per_page
-    )
+    versions, status = fetch_remote_versions(config.tla.urls.tags, config.tla.urls.releases, config.tla.urls.per_page)
 
     if not versions:
         typer.echo(f"Error: Could not fetch remote versions (status: {status.value})", err=True)

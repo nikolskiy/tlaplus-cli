@@ -14,6 +14,7 @@ def test_config_list(mocker, tmp_path, runner):
     assert "workspace:" in result.output
     assert "tlc:" in result.output
 
+
 def test_config_edit_default(mocker, tmp_path, runner):
     """Test launching default editor for config."""
     config.load_config.cache_clear()
@@ -39,6 +40,7 @@ def test_config_edit_default(mocker, tmp_path, runner):
     assert args[0][0] == "/usr/bin/vim"
     assert str(config_dir / "config.yaml") in args[0]
 
+
 def test_config_edit_specific_editor(mocker, tmp_path, runner):
     """Test launching a specific editor."""
     config.load_config.cache_clear()
@@ -55,6 +57,7 @@ def test_config_edit_specific_editor(mocker, tmp_path, runner):
     args, _ = mock_run.call_args
     assert args[0][0] == "/usr/bin/nano"
     assert str(config_dir / "config.yaml") in args[0]
+
 
 def test_config_edit_missing_editor(mocker, tmp_path, runner):
     """Test error when editor is not found."""

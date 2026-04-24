@@ -5,9 +5,7 @@ from tlaplus_cli.versioning import list_local_versions, set_pin
 
 
 @app.command()
-def pin(
-    version: str = typer.Argument(..., help="The version to pin (e.g. 'v1.8.0').")
-) -> None:
+def pin(version: str = typer.Argument(..., help="The version to pin (e.g. 'v1.8.0').")) -> None:
     """Pin a specific installed version to be used by 'tla tlc'."""
     local_versions = list_local_versions()
 

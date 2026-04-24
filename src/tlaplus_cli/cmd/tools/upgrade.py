@@ -33,17 +33,13 @@ def _resolve_upgrade_target(version: str | None, pinned_dir: Path | None) -> tup
 
 
 @app.command()
-def upgrade(
-    version: str = typer.Argument(None, help="Specific version to upgrade (optional).")
-) -> None:
+def upgrade(version: str = typer.Argument(None, help="Specific version to upgrade (optional).")) -> None:
     """Upgrade an installed version (or the pinned version) to its latest remote build."""
     pinned_dir = get_pinned_version_dir()
     target_name, local_path = _resolve_upgrade_target(version, pinned_dir)
 
     config = load_config()
-    versions, status = fetch_remote_versions(
-        config.tla.urls.tags, config.tla.urls.releases, config.tla.urls.per_page
-    )
+    versions, status = fetch_remote_versions(config.tla.urls.tags, config.tla.urls.releases, config.tla.urls.per_page)
 
     if not versions:
         typer.echo(f"Error: Could not fetch remote versions (status: {status.value})", err=True)

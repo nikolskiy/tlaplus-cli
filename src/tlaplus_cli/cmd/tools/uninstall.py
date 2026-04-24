@@ -72,9 +72,7 @@ def _remove_path(path: Path, pinned_dir: Path | None) -> bool:
 @app.command()
 def uninstall(
     versions: list[str] = typer.Argument(None, help="One or more version tags to uninstall."),  # noqa: B008
-    all_versions: bool = typer.Option(
-        False, "--all", help="Uninstall ALL local versions (danger!)."
-    ),
+    all_versions: bool = typer.Option(False, "--all", help="Uninstall ALL local versions (danger!)."),
     yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation prompt."),
 ) -> None:
     """Remove one or more installed TLC versions from the local cache."""

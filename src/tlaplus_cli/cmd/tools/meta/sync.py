@@ -13,9 +13,7 @@ from tlaplus_cli.versioning import (
 def meta_sync() -> None:
     """Synchronize local metadata with remote GitHub information."""
     config = load_config()
-    versions, status = fetch_remote_versions(
-        config.tla.urls.tags, config.tla.urls.releases, config.tla.urls.per_page
-    )
+    versions, status = fetch_remote_versions(config.tla.urls.tags, config.tla.urls.releases, config.tla.urls.per_page)
 
     if not versions:
         typer.echo(f"Error: Could not fetch remote versions (status: {status.value})", err=True)
