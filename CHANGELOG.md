@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-04-24
+
+### Fixed
+- `tla modules build` now uses both local and custom module paths.
+
 ## [0.4.1] - 2026-04-24
 
 ### Fixed
