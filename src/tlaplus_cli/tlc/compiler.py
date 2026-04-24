@@ -14,7 +14,7 @@ def get_tlc_jar_path() -> Path:
     return pinned_jar if (pinned_jar and pinned_jar.exists()) else legacy
 
 
-def compile_modules(base_dir: Path | None = None, verbose: bool = False) -> Path:
+def compile_modules(base_dir: Path | None = None, verbose: bool = False) -> Path:  # noqa: PLR0912, PLR0915
     """Compile custom Java modules. Returns the classes directory path."""
     config = load_config()
     base_dir = base_dir or workspace_root()
@@ -24,19 +24,49 @@ def compile_modules(base_dir: Path | None = None, verbose: bool = False) -> Path
         msg = "tla2tools.jar not found. Run 'tla tools install' first."
         raise FileNotFoundError(msg)
 
-    modules_dir = Path(config.module_path) if config.module_path else base_dir / config.workspace.modules_dir
+    local_modules_dir = base_dir / config.workspace.modules_dir
     classes_dir = base_dir / config.workspace.classes_dir
 
-    lib_dir = Path(config.module_lib_path) if config.module_lib_path else modules_dir / "lib"
+    custom_modules_dir = None
+    if config.module_path:
+        custom_modules_dir = Path(config.module_path)
+        if not custom_modules_dir.exists():
+            msg = f"modules directory not found: {custom_modules_dir}"
+            raise FileNotFoundError(msg)
 
-    lib_jars = sorted(lib_dir.glob("*.jar")) if lib_dir.is_dir() else []
-    classpath = os.pathsep.join([str(jar_path)] + [str(j) for j in lib_jars])
-
-    if not modules_dir.exists():
-        msg = f"modules directory not found: {modules_dir}"
+    if not config.module_path and not local_modules_dir.exists():
+        msg = f"modules directory not found: {local_modules_dir}"
         raise FileNotFoundError(msg)
 
-    java_files = list(modules_dir.rglob("*.java"))
+    lib_jars = []
+    if config.module_lib_path:
+        lib_dir = Path(config.module_lib_path)
+        if lib_dir.is_dir():
+            lib_jars.extend(sorted(lib_dir.glob("*.jar")))
+    else:
+        if custom_modules_dir:
+            custom_lib = custom_modules_dir / "lib"
+            if custom_lib.is_dir():
+                lib_jars.extend(sorted(custom_lib.glob("*.jar")))
+        local_lib = local_modules_dir / "lib"
+        if local_lib.is_dir():
+            lib_jars.extend(sorted(local_lib.glob("*.jar")))
+
+    # Remove duplicates preserving order
+    unique_jars = []
+    for jar in lib_jars:
+        if jar not in unique_jars:
+            unique_jars.append(jar)
+    lib_jars = unique_jars
+
+    classpath = os.pathsep.join([str(jar_path)] + [str(j) for j in lib_jars])
+
+    java_files = []
+    if custom_modules_dir:
+        java_files.extend(list(custom_modules_dir.rglob("*.java")))
+    if local_modules_dir.exists():
+        java_files.extend(list(local_modules_dir.rglob("*.java")))
+
     if not java_files:
         return classes_dir
 
