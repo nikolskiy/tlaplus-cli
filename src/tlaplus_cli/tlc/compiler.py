@@ -3,6 +3,7 @@ import subprocess
 from pathlib import Path
 
 from tlaplus_cli.config.loader import cache_dir, load_config, workspace_root
+from tlaplus_cli.java.classpath import ClasspathResolver, ResolveMode
 from tlaplus_cli.versioning import get_pinned_version_dir
 
 
@@ -14,8 +15,8 @@ def get_tlc_jar_path() -> Path:
     return pinned_jar if (pinned_jar and pinned_jar.exists()) else legacy
 
 
-def compile_modules(base_dir: Path | None = None, verbose: bool = False) -> Path:  # noqa: PLR0912, PLR0915
-    """Compile custom Java modules. Returns the classes directory path."""
+def build_compile_command(base_dir: Path | None = None) -> list[str]:
+    """Build the javac command for compiling custom modules."""
     config = load_config()
     base_dir = base_dir or workspace_root()
 
@@ -38,28 +39,8 @@ def compile_modules(base_dir: Path | None = None, verbose: bool = False) -> Path
         msg = f"modules directory not found: {local_modules_dir}"
         raise FileNotFoundError(msg)
 
-    lib_jars = []
-    if config.module_lib_path:
-        lib_dir = Path(config.module_lib_path)
-        if lib_dir.is_dir():
-            lib_jars.extend(sorted(lib_dir.glob("*.jar")))
-    else:
-        if custom_modules_dir:
-            custom_lib = custom_modules_dir / "lib"
-            if custom_lib.is_dir():
-                lib_jars.extend(sorted(custom_lib.glob("*.jar")))
-        local_lib = local_modules_dir / "lib"
-        if local_lib.is_dir():
-            lib_jars.extend(sorted(local_lib.glob("*.jar")))
-
-    # Remove duplicates preserving order
-    unique_jars = []
-    for jar in lib_jars:
-        if jar not in unique_jars:
-            unique_jars.append(jar)
-    lib_jars = unique_jars
-
-    classpath = os.pathsep.join([str(jar_path)] + [str(j) for j in lib_jars])
+    resolver = ClasspathResolver(config, project_root=base_dir, tool_jar=jar_path)
+    classpath = os.pathsep.join(resolver.resolve(ResolveMode.COMPILE))
 
     java_files = []
     if custom_modules_dir:
@@ -68,10 +49,22 @@ def compile_modules(base_dir: Path | None = None, verbose: bool = False) -> Path
         java_files.extend(list(local_modules_dir.rglob("*.java")))
 
     if not java_files:
+        return []
+
+    return ["javac", "-cp", classpath, "-d", str(classes_dir), *[str(f) for f in java_files]]
+
+
+def compile_modules(base_dir: Path | None = None, verbose: bool = False) -> Path:
+    """Compile custom Java modules. Returns the classes directory path."""
+    config = load_config()
+    base_dir = base_dir or workspace_root()
+    classes_dir = base_dir / config.workspace.classes_dir
+
+    cmd = build_compile_command(base_dir)
+    if not cmd:
         return classes_dir
 
     classes_dir.mkdir(parents=True, exist_ok=True)
-    cmd = ["javac", "-cp", classpath, "-d", str(classes_dir), *[str(f) for f in java_files]]
 
     try:
         subprocess.run(cmd, check=True, capture_output=not verbose, text=True)

@@ -1,7 +1,7 @@
 import typer
 
 from tlaplus_cli.tlc.compiler import get_tlc_jar_path
-from tlaplus_cli.tlc.runner import get_tlc_version, resolve_spec_file, run_tlc
+from tlaplus_cli.tlc.runner import build_tlc_command, get_tlc_version, resolve_spec_file, run_tlc
 
 
 def version_callback(value: bool) -> None:
@@ -30,6 +30,7 @@ def tlc(
         callback=version_callback,
         is_eager=True,
     ),
+    show_command: bool = typer.Option(False, "--show-command", help="Print the command instead of executing it."),
 ) -> None:
     """Run TLC model checker on a TLA+ specification."""
     if version:
@@ -40,6 +41,15 @@ def tlc(
     except FileNotFoundError as e:
         typer.echo(f"Error: {e}", err=True)
         raise typer.Exit(1) from None
+
+    if show_command:
+        try:
+            cmd = build_tlc_command(spec)
+        except FileNotFoundError as e:
+            typer.echo(f"Error: {e}", err=True)
+            raise typer.Exit(1) from None
+        typer.echo(" ".join(cmd))
+        raise typer.Exit(0)
 
     typer.echo(f"Running TLC on {spec_name} ...")
     try:

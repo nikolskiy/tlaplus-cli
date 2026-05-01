@@ -10,12 +10,12 @@ def test_build_classpath_with_custom_lib(mocker, tmp_path, runner):
     mocker.patch("tlaplus_cli.tlc.compiler.workspace_root", return_value=tmp_path)
 
     # Mock subprocess.run to avoid actual compilation
-    mock_run = mocker.patch("subprocess.run")
+    mock_run = mocker.patch("tlaplus_cli.tlc.compiler.subprocess.run")
 
     # Setup mock environment
     module_dir = tmp_path / "modules"
     module_dir.mkdir()
-    (module_dir / "Test.java").write_text("public class Test {}")
+    (module_dir / "Test.java").touch()
 
     lib_dir = tmp_path / "custom_lib"
     lib_dir.mkdir()
@@ -54,11 +54,11 @@ def test_build_classpath_fallback_lib(mocker, tmp_path, runner):
     mocker.patch("tlaplus_cli.config.loader.config_dir", return_value=config_dir)
     mocker.patch("tlaplus_cli.tlc.compiler.workspace_root", return_value=tmp_path)
 
-    mock_run = mocker.patch("subprocess.run")
+    mock_run = mocker.patch("tlaplus_cli.tlc.compiler.subprocess.run")
 
     module_dir = tmp_path / "modules"
     module_dir.mkdir()
-    (module_dir / "Test.java").write_text("public class Test {}")
+    (module_dir / "Test.java").touch()
 
     # Default lib location: modules_dir / lib
     lib_dir = module_dir / "lib"

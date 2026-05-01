@@ -4,6 +4,7 @@ from pathlib import Path
 
 from tlaplus_cli.config.loader import load_config
 from tlaplus_cli.java import validate_java_version
+from tlaplus_cli.java.classpath import ClasspathResolver, ResolveMode
 from tlaplus_cli.project import find_project_root
 from tlaplus_cli.tlc.compiler import get_tlc_jar_path
 
@@ -29,11 +30,9 @@ def resolve_spec_file(spec: str) -> tuple[Path, str]:
     return spec_file.absolute(), spec_file.name
 
 
-def run_tlc(spec: str) -> int:
-    """Run TLC model checker on a TLA+ specification. Returns exit code."""
+def build_tlc_command(spec: str) -> list[str]:
+    """Build the java command for running TLC."""
     config = load_config()
-
-    validate_java_version(config.java.min_version)
 
     jar_path = get_tlc_jar_path()
     if not jar_path.exists():
@@ -45,35 +44,32 @@ def run_tlc(spec: str) -> int:
         spec_file, modules_dir=config.workspace.modules_dir, classes_dir=config.workspace.classes_dir
     )
 
-    classpath_parts = [str(jar_path)]
+    resolver = ClasspathResolver(config, project_root=project_root, tool_jar=jar_path)
+    classpath = os.pathsep.join(resolver.resolve(ResolveMode.RUNTIME))
+
     extra_jvm_opts: list[str] = []
+    tla_library = resolver.get_tla_library_property()
+    if tla_library:
+        extra_jvm_opts.append(f"-DTLA-Library={tla_library}")
 
-    if config.module_path:
-        custom_path = Path(config.module_path)
-        if custom_path.is_dir():
-            classpath_parts.append(str(custom_path))
-            extra_jvm_opts.append(f"-DTLA-Library={custom_path}")
-
-    if project_root:
-        classes_path = project_root / config.workspace.classes_dir
-        if classes_path.is_dir():
-            classpath_parts.insert(0, str(classes_path))
-        lib_dir = project_root / "lib"
-        if lib_dir.is_dir():
-            classpath_parts.extend(str(j) for j in sorted(lib_dir.glob("*.jar")))
-        modules_path = project_root / config.workspace.modules_dir
-        if modules_path.is_dir():
-            extra_jvm_opts.append(f"-DTLA-Library={modules_path}")
-
-    cmd = [
+    return [
         "java",
         *config.java.opts,
         *extra_jvm_opts,
         "-cp",
-        os.pathsep.join(classpath_parts),
+        classpath,
         config.tlc.java_class,
         spec_file.name,
     ]
+
+
+def run_tlc(spec: str) -> int:
+    """Run TLC model checker on a TLA+ specification. Returns exit code."""
+    config = load_config()
+    validate_java_version(config.java.min_version)
+
+    spec_file, _ = resolve_spec_file(spec)
+    cmd = build_tlc_command(spec)
 
     try:
         result = subprocess.run(cmd, cwd=str(spec_file.parent), check=False)

@@ -127,6 +127,12 @@ To check the currently pinned `tla2tools.jar` path and its TLC version:
 tla tlc --version
 ```
 
+To inspect the exact Java command that will be executed without running it:
+
+```bash
+tla tlc <spec_name> --show-command
+```
+
 ### Compile Custom Java Modules
 
 Java modules (overrides) are compiled using the pinned version of the toolset.
@@ -148,8 +154,9 @@ tla modules path /path/to/custom/modules
 
 View or reset the custom modules path:
 ```bash
-tla modules path         # View current path
-tla modules path none    # Reset to default
+tla modules path          # View current path
+tla modules path none     # Reset to default
+tla modules path --resolved  # Show fully resolved paths for current context
 ```
 
 Configure a persistent custom modules dependencies (lib) path:
@@ -169,6 +176,11 @@ tla modules lib none     # Reset to default
 Verbose output:
 ```bash
 tla modules build --verbose
+```
+
+Show compilation command:
+```bash
+tla modules build --show-command
 ```
 
 The build command:

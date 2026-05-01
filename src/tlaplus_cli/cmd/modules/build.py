@@ -4,16 +4,27 @@ from pathlib import Path
 import typer
 
 from tlaplus_cli.cmd.modules import app
-from tlaplus_cli.tlc.compiler import compile_modules
+from tlaplus_cli.tlc.compiler import build_compile_command, compile_modules
 
 
 @app.command(name="build")
 def build(
     path: str | None = typer.Argument(None, help="Project root directory (defaults to workspace root)."),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Show compilation output."),
+    show_command: bool = typer.Option(False, "--show-command", help="Print the command instead of executing it."),
 ) -> None:
     """Compile custom Java modules."""
     base_dir = Path(path).resolve() if path is not None else None
+
+    if show_command:
+        try:
+            cmd = build_compile_command(base_dir)
+        except FileNotFoundError as e:
+            typer.echo(f"Error: {e}", err=True)
+            raise typer.Exit(1) from None
+        if cmd:
+            typer.echo(" ".join(cmd))
+        return
 
     typer.echo("Compiling Java files ...")
     try:

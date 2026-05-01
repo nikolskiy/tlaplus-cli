@@ -2,6 +2,7 @@ import typer
 
 from tlaplus_cli.cmd.tools.meta import app
 from tlaplus_cli.config.loader import load_config
+from tlaplus_cli.ui import warn
 from tlaplus_cli.versioning import (
     fetch_remote_versions,
     list_local_versions,
@@ -28,6 +29,6 @@ def meta_sync() -> None:
             write_version_metadata(lv.path, target)
             typer.echo(f"Synced metadata for {lv.path.name}")
         else:
-            typer.echo(f"⚠ Warning: Could not find remote data for {lv.name}", err=True)
+            warn(f"Could not find remote data for {lv.name}")
 
     typer.echo("Metadata sync complete.")

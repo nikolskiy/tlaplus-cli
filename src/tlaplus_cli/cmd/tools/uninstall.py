@@ -5,6 +5,7 @@ import typer
 
 from tlaplus_cli.cmd.tools import app
 from tlaplus_cli.config.loader import cache_dir
+from tlaplus_cli.ui import warn
 from tlaplus_cli.versioning import (
     clear_pin,
     get_pinned_version_dir,
@@ -24,12 +25,12 @@ def _resolve_uninstall_targets(versions: list[str]) -> list[Path]:
             if legacy.exists():
                 targets.append(legacy)
             else:
-                typer.echo("⚠ Warning: Default (legacy) tla2tools.jar not found.", err=True)
+                warn("Default (legacy) tla2tools.jar not found.")
             continue
 
         matching = sorted([lv for lv in local_versions if lv.name == v], key=lambda x: x.path.name)
         if not matching:
-            typer.echo(f"⚠ Warning: Version {v} not found locally.", err=True)
+            warn(f"Version {v} not found locally.")
             continue
 
         if len(matching) > 1:

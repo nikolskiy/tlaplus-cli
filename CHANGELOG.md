@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- `--show-command` flag to `tla tlc` and `tla modules build` to inspect the exact Java command before execution.
+- `--resolved` flag to `tla modules path` to display fully resolved Source, Classes, and Library paths for the current context.
+- Centralized `ClasspathResolver` component for unified path management across compilation and execution.
+
+### Changed
+- `tla tlc` now includes `module_lib_path` in the runtime classpath, ensuring consistency between build and runtime environments.
+- Refactored `cmd/` layer to use standardized `warn()` helper and adhere to strict public API boundaries.
+
+### Fixed
+- Improved `try` block scoping and error handling in CLI commands.
+- Standardized fake-file creation in tests using `touch()`.
+
 ## [0.4.2] - 2026-04-24
 
 ### Fixed
