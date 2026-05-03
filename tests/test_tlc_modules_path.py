@@ -1,3 +1,5 @@
+from unittest.mock import MagicMock
+
 from tlaplus_cli.cli import app
 
 
@@ -22,9 +24,14 @@ def test_tlc_uses_custom_module_path(mocker, tmp_path, base_settings, runner):
     spec_file = tmp_path / "MySpec.tla"
     spec_file.write_text("---- MODULE MySpec ----\n====\n")
 
-    # Mock subprocess.run
-    mock_run = mocker.patch("tlaplus_cli.tlc.runner.subprocess.run")
-    mock_run.return_value.returncode = 0
+    # Mock subprocess.Popen
+    mock_popen = mocker.patch("tlaplus_cli.tlc.runner.subprocess.Popen")
+    mock_process = MagicMock()
+    mock_process.returncode = 0
+    mock_process.stdout = []
+    mock_process.communicate.return_value = ("", "")
+    mock_process.__enter__.return_value = mock_process
+    mock_popen.return_value = mock_process
 
     # Mock validate_java_version to avoid potential Mock issues
     mocker.patch("tlaplus_cli.tlc.runner.validate_java_version")
@@ -32,7 +39,7 @@ def test_tlc_uses_custom_module_path(mocker, tmp_path, base_settings, runner):
     result = runner.invoke(app, ["tlc", str(spec_file)])
 
     assert result.exit_code == 0
-    args, _kwargs = mock_run.call_args
+    args, _kwargs = mock_popen.call_args
     cmd = args[0]
     cmd_str = " ".join(cmd)
 

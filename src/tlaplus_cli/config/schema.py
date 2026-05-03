@@ -13,6 +13,7 @@ class TlaUrls(BaseModel):
 
 class TlaConfig(BaseModel):
     urls: TlaUrls
+    community_modules: TlaUrls | None = None
 
 
 class WorkspaceConfig(BaseModel):

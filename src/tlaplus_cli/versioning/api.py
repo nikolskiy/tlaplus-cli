@@ -39,7 +39,7 @@ def _fetch_from_api(
 
 
 def _process_remote_versions(
-    tags_data: list[dict[str, Any]], releases_data: list[dict[str, Any]]
+    tags_data: list[dict[str, Any]], releases_data: list[dict[str, Any]], asset_name: str = "tla2tools.jar"
 ) -> list[RemoteVersion]:
     releases_by_tag = {cast_str(r.get("tag_name")): r for r in releases_data if "tag_name" in r}
     versions = []
@@ -53,7 +53,7 @@ def _process_remote_versions(
         assets = release.get("assets", [])
         jar_url = None
         for asset in assets:
-            if asset.get("name") == "tla2tools.jar":
+            if asset.get("name") == asset_name:
                 jar_url = cast_str(asset.get("browser_download_url"))
                 break
 
@@ -75,10 +75,13 @@ def _process_remote_versions(
 
 
 def fetch_remote_versions(
-    tags_url: str, releases_url: str, per_page: int = 30
+    tags_url: str, releases_url: str, per_page: int = 30, asset_name: str = "tla2tools.jar"
 ) -> tuple[list[RemoteVersion], FetchStatus]:
-    """Fetch available TLC versions from GitHub API."""
-    cache_file = get_github_cache_file()
+    """Fetch available versions from GitHub API."""
+    # Create a unique cache file name based on asset_name
+    # Replace dots and special chars to keep it a valid filename
+    safe_name = asset_name.replace(".", "_").replace("/", "_")
+    cache_file = get_github_cache_file().parent / f"github_cache_{safe_name}.json"
 
     # Check cache TTL
     if cache_file.exists():
@@ -102,7 +105,7 @@ def fetch_remote_versions(
         return [], FetchStatus.UNAVAILABLE
 
     tags_data, releases_data = api_data
-    versions = _process_remote_versions(tags_data, releases_data)
+    versions = _process_remote_versions(tags_data, releases_data, asset_name=asset_name)
 
     # Save to cache
     save_github_cache(cache_file, versions)

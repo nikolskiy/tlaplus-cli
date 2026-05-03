@@ -7,9 +7,12 @@ import requests
 from tlaplus_cli.cli import app
 from tlaplus_cli.versioning import FetchStatus, fetch_remote_versions
 
+# The generalized fetch_remote_versions uses asset-specific cache names
+DEFAULT_CACHE = "github_cache_tla2tools_jar.json"
+
 
 def test_fetch_cache_clear(mock_load_config, mock_cache, runner):
-    cache_file = mock_cache / "github_cache.json"
+    cache_file = mock_cache / DEFAULT_CACHE
     cache_file.write_text("{}")
     result = runner.invoke(app, ["fetch-cache", "clear"])
     assert result.exit_code == 0
@@ -18,7 +21,7 @@ def test_fetch_cache_clear(mock_load_config, mock_cache, runner):
 
 def test_fetch_cache_clear_idempotent(mock_load_config, mock_cache, runner):
     """Clearing a non-existent cache should not fail."""
-    cache_file = mock_cache / "github_cache.json"
+    cache_file = mock_cache / DEFAULT_CACHE
     assert not cache_file.exists()
     result = runner.invoke(app, ["fetch-cache", "clear"])
     assert result.exit_code == 0
@@ -27,7 +30,7 @@ def test_fetch_cache_clear_idempotent(mock_load_config, mock_cache, runner):
 
 def test_fetch_remote_versions_uses_cache(mocker, mock_cache, base_settings):
     """fetch_remote_versions returns cached data if not stale."""
-    cache_file = mock_cache / "github_cache.json"
+    cache_file = mock_cache / DEFAULT_CACHE
     mock_data = [
         {
             "name": "v1.8.0",
@@ -56,7 +59,7 @@ def test_fetch_remote_versions_uses_cache(mocker, mock_cache, base_settings):
 
 def test_fetch_remote_versions_stale_fallback(mocker, mock_cache, base_settings):
     """fetch_remote_versions falls back to stale cache if API fails."""
-    cache_file = mock_cache / "github_cache.json"
+    cache_file = mock_cache / DEFAULT_CACHE
     mock_data = [
         {
             "name": "v1.7.0",
@@ -84,7 +87,7 @@ def test_fetch_remote_versions_stale_fallback(mocker, mock_cache, base_settings)
 
 def test_fetch_remote_versions_corrupt_cache(mocker, mock_cache, base_settings):
     """fetch_remote_versions handles corrupt cache file."""
-    cache_file = mock_cache / "github_cache.json"
+    cache_file = mock_cache / DEFAULT_CACHE
     cache_file.write_text("not json")
 
     mocker.patch("requests.get", side_effect=requests.RequestException("API down"))

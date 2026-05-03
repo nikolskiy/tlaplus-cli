@@ -3,6 +3,7 @@ from enum import Enum, auto
 from pathlib import Path
 
 from tlaplus_cli.config.schema import Settings
+from tlaplus_cli.versioning.paths import get_modules_dir
 
 
 class ResolveMode(Enum):
@@ -101,6 +102,14 @@ class ClasspathResolver:
         # 3. Config
         if config_path:
             raw_paths.append(str(Path(config_path).absolute()))
+
+        # 4. Managed Modules (Global Cache)
+        managed_dir = get_modules_dir()
+        if managed_dir.is_dir():
+            # Add all subdirectories of managed_dir to raw_paths so they are expanded for JARs
+            for item in managed_dir.iterdir():
+                if item.is_dir():
+                    raw_paths.append(str(item.absolute()))
 
         # Deduplicate while preserving order
         seen = set()

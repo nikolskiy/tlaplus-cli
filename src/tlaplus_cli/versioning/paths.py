@@ -1,3 +1,4 @@
+import contextlib
 from pathlib import Path
 
 from tlaplus_cli.config.loader import cache_dir
@@ -10,6 +11,10 @@ def get_github_cache_file() -> Path:
 
 def get_tools_dir() -> Path:
     return cache_dir() / "tools"
+
+
+def get_modules_dir() -> Path:
+    return cache_dir() / "modules"
 
 
 def get_pinned_path() -> Path:
@@ -77,7 +82,8 @@ def clear_pin() -> None:
 
 
 def clear_cache() -> None:
-    """Remove the remote versions cache file."""
-    cache_file = get_github_cache_file()
-    if cache_file.exists():
-        cache_file.unlink()
+    """Remove all remote versions cache files."""
+    cache_dir_path = get_github_cache_file().parent
+    for cache_file in cache_dir_path.glob("github_cache*.json"):
+        with contextlib.suppress(OSError):
+            cache_file.unlink()

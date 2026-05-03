@@ -3,6 +3,10 @@ tla:
     tags: https://api.github.com/repos/tlaplus/tlaplus/tags
     releases: https://api.github.com/repos/tlaplus/tlaplus/releases
     per_page: 30
+  community_modules:
+    tags: https://api.github.com/repos/tlaplus/CommunityModules/tags
+    releases: https://api.github.com/repos/tlaplus/CommunityModules/releases
+    per_page: 30
 
 # Path to the TLA+ workspace (specs, custom modules, compiled classes).
 # Relative paths are resolved from the current working directory.

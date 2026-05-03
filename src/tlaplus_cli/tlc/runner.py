@@ -1,5 +1,6 @@
 import os
 import subprocess
+from collections.abc import Callable
 from pathlib import Path
 
 from tlaplus_cli.config.loader import load_config
@@ -7,6 +8,8 @@ from tlaplus_cli.java import validate_java_version
 from tlaplus_cli.java.classpath import ClasspathResolver, ResolveMode
 from tlaplus_cli.project import find_project_root
 from tlaplus_cli.tlc.compiler import get_tlc_jar_path
+from tlaplus_cli.tlc.models import ModelCheckResult
+from tlaplus_cli.tlc.parser import TlcParser
 
 
 def resolve_spec_file(spec: str) -> tuple[Path, str]:
@@ -63,7 +66,7 @@ def build_tlc_command(spec: str) -> list[str]:
     ]
 
 
-def run_tlc(spec: str) -> int:
+def run_tlc(spec: str, callback: Callable[[ModelCheckResult], None] | None = None) -> int:
     """Run TLC model checker on a TLA+ specification. Returns exit code."""
     config = load_config()
     validate_java_version(config.java.min_version)
@@ -71,13 +74,39 @@ def run_tlc(spec: str) -> int:
     spec_file, _ = resolve_spec_file(spec)
     cmd = build_tlc_command(spec)
 
+    # Ensure tool mode is enabled for structured output
+    if "-tool" not in cmd:
+        # Insert -tool after java class name or at some reasonable position
+        # TLC usually expects options before the spec file name.
+        # cmd is ["java", ..., "tlc2.TLC", "spec.tla"]
+        cmd.insert(-1, "-tool")
+
+    parser = TlcParser()
+
     try:
-        result = subprocess.run(cmd, cwd=str(spec_file.parent), check=False)
-    except FileNotFoundError:
+        with subprocess.Popen(
+            cmd,
+            cwd=str(spec_file.parent),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1,
+        ) as process:
+            if process.stdout:
+                for line in process.stdout:
+                    if line.startswith("@!@!@"):
+                        parser.process_line(line)
+                    else:
+                        print(line, end="", flush=True)
+
+                    if callback:
+                        callback(parser.get_result())
+
+            process.wait()
+            return process.returncode
+    except (subprocess.SubprocessError, OSError):
         msg = "'java' not found. Please install Java."
         raise FileNotFoundError(msg) from None
-    else:
-        return result.returncode
 
 
 def get_tlc_version() -> str | None:
@@ -87,7 +116,7 @@ def get_tlc_version() -> str | None:
     if not jar_path.exists():
         return None
 
-    cmd = ["java", "-cp", str(jar_path), config.tlc.java_class]
+    cmd = ["java", "-cp", str(jar_path), config.tlc.java_class, "-version"]
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, check=False)
         output = result.stdout or result.stderr

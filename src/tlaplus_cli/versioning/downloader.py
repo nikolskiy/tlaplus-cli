@@ -15,7 +15,7 @@ from tlaplus_cli.versioning.schema import RemoteVersion
 
 
 def _download_jar(url: str, jar_path: Path, label: str) -> None:
-    """Download tla2tools.jar from *url* with a progress bar."""
+    """Download a jar file from *url* with a progress bar."""
     response = requests.get(
         url,
         stream=True,
@@ -38,10 +38,13 @@ def _download_jar(url: str, jar_path: Path, label: str) -> None:
                 progress.update(task, advance=len(chunk))
 
 
-def download_version(target: RemoteVersion, *, force: bool = False) -> Path:
-    """Download a TLC version jar. Returns the version directory path."""
-    tools_dir = get_tools_dir()
-    version_dir = tools_dir / f"{target.name}-{target.short_sha}"
+def download_version(
+    target: RemoteVersion, *, force: bool = False, base_dir: Path | None = None, jar_name: str = "tla2tools.jar"
+) -> Path:
+    """Download a version jar. Returns the version directory path."""
+    if base_dir is None:
+        base_dir = get_tools_dir()
+    version_dir = base_dir / f"{target.name}-{target.short_sha}"
 
     if version_dir.exists() and not force:
         return version_dir
@@ -50,7 +53,7 @@ def download_version(target: RemoteVersion, *, force: bool = False) -> Path:
         shutil.rmtree(version_dir)
 
     version_dir.mkdir(parents=True, exist_ok=True)
-    jar_path = version_dir / "tla2tools.jar"
+    jar_path = version_dir / jar_name
 
     try:
         _download_jar(target.jar_download_url, jar_path, target.name)
@@ -63,25 +66,19 @@ def download_version(target: RemoteVersion, *, force: bool = False) -> Path:
     return version_dir
 
 
-def download_version_from_url(url: str) -> Path:
-    """Download tla2tools.jar from *url* and store it in a timestamped version directory.
-
-    The version name is extracted from URL path segments.  The tag (directory suffix) is
-    the ISO 8601 download timestamp.
-
-    Raises:
-        ValueError: if no semver segment can be found in the URL.
-    """
+def download_version_from_url(url: str, *, base_dir: Path | None = None, jar_name: str = "tla2tools.jar") -> Path:
+    """Download a jar file from *url* and store it in a timestamped version directory."""
     version_name = extract_version_from_url(url)
     if version_name is None:
         msg = 'could not extract a version name from the URL. The URL must contain a version segment (e.g. "v1.8.0").'
         raise ValueError(msg)
 
     tag = _utc_now_iso()
-    tools_dir = get_tools_dir()
-    version_dir = tools_dir / f"{version_name}-{tag}"
+    if base_dir is None:
+        base_dir = get_tools_dir()
+    version_dir = base_dir / f"{version_name}-{tag}"
     version_dir.mkdir(parents=True, exist_ok=True)
-    jar_path = version_dir / "tla2tools.jar"
+    jar_path = version_dir / jar_name
 
     try:
         _download_jar(url, jar_path, version_name)

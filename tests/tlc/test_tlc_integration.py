@@ -47,6 +47,7 @@ def test_tlc_integration(
     captured = capfd.readouterr()
     stdout = captured.out + res_tlc.stdout
 
-    assert "Running TLC on queue.tla" in stdout
+    assert "Running TLC" in stdout
+    assert "on queue.tla" in stdout
     # The output might vary but we expect some successes
     assert "State log test:" in stdout
