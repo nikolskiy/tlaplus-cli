@@ -19,6 +19,7 @@ workspace:
 tlc:
   java_class: tlc2.TLC
   overrides_class: tlc2.overrides.TLCOverrides
+  refresh_interval: 1.0
 
 java:
   min_version: 11

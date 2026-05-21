@@ -10,6 +10,7 @@ from tlaplus_cli.project import find_project_root
 from tlaplus_cli.tlc.compiler import get_tlc_jar_path
 from tlaplus_cli.tlc.models import ModelCheckResult
 from tlaplus_cli.tlc.parser import TlcParser
+from tlaplus_cli.tlc.sany import SanyParser
 
 
 def resolve_spec_file(spec: str) -> tuple[Path, str]:
@@ -66,7 +67,7 @@ def build_tlc_command(spec: str) -> list[str]:
     ]
 
 
-def run_tlc(spec: str, callback: Callable[[ModelCheckResult], None] | None = None) -> int:
+def run_tlc(spec: str, callback: Callable[[ModelCheckResult], None] | None = None, coverage: bool = False) -> int:
     """Run TLC model checker on a TLA+ specification. Returns exit code."""
     config = load_config()
     validate_java_version(config.java.min_version)
@@ -76,12 +77,15 @@ def run_tlc(spec: str, callback: Callable[[ModelCheckResult], None] | None = Non
 
     # Ensure tool mode is enabled for structured output
     if "-tool" not in cmd:
-        # Insert -tool after java class name or at some reasonable position
-        # TLC usually expects options before the spec file name.
-        # cmd is ["java", ..., "tlc2.TLC", "spec.tla"]
         cmd.insert(-1, "-tool")
 
+    if coverage and "-coverage" not in cmd:
+        # coverage expects a number of minutes between stats, default to 1
+        cmd.insert(-1, "-coverage")
+        cmd.insert(-1, "1")
+
     parser = TlcParser()
+    sany_parser = SanyParser()
 
     try:
         with subprocess.Popen(
@@ -97,10 +101,15 @@ def run_tlc(spec: str, callback: Callable[[ModelCheckResult], None] | None = Non
                     if line.startswith("@!@!@"):
                         parser.process_line(line)
                     else:
-                        print(line, end="", flush=True)
+                        sany_parser.process_line(line)
+                        # We also pass non-SANY, non-TLC-tool-mode lines to the TLC parser
+                        # so they end up in output_lines
+                        parser.process_line(line)
 
                     if callback:
-                        callback(parser.get_result())
+                        res = parser.get_result()
+                        res.sany_errors = sany_parser.get_errors()
+                        callback(res)
 
             process.wait()
             return process.returncode

@@ -1,5 +1,5 @@
-from src.tlaplus_cli.tlc.models import CheckState, CheckStatus
-from src.tlaplus_cli.tlc.parser import TlcParser
+from tlaplus_cli.tlc.models import CheckState, CheckStatus
+from tlaplus_cli.tlc.parser import TlcParser
 
 
 def test_parse_starting():

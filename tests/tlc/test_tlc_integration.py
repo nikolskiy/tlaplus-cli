@@ -1,6 +1,8 @@
 import pytest
 
 from tlaplus_cli.cli import app
+from tlaplus_cli.cmd.tlc import TlcFormatter
+from tlaplus_cli.tlc.models import CheckState
 
 
 def test_tlc_integration(
@@ -31,6 +33,16 @@ def test_tlc_integration(
     # Patch workspace_root for build_tlc_module
     mocker.patch("tlaplus_cli.tlc.compiler.workspace_root", return_value=queue_dir)
 
+    captured_result = None
+    original_update_logs = TlcFormatter.update_logs
+
+    def mock_update_logs(self, layout, result):
+        nonlocal captured_result
+        captured_result = result
+        original_update_logs(self, layout, result)
+
+    mocker.patch("tlaplus_cli.cmd.tlc.TlcFormatter.update_logs", mock_update_logs)
+
     # 1. Compile modules
     res_build = runner.invoke(app, ["modules", "build"])
     assert res_build.exit_code == 0, f"Module compilation failed: {res_build.stdout}"
@@ -44,10 +56,8 @@ def test_tlc_integration(
     assert res_tlc.exit_code == 0, f"TLC run failed: {res_tlc.stdout}"
 
     # 3. Verify output
-    captured = capfd.readouterr()
-    stdout = captured.out + res_tlc.stdout
+    assert captured_result is not None
+    assert captured_result.state == CheckState.Success
 
-    assert "Running TLC" in stdout
-    assert "on queue.tla" in stdout
-    # The output might vary but we expect some successes
-    assert "State log test:" in stdout
+    output_lines_str = "\n".join(captured_result.output_lines)
+    assert "State log test:" in output_lines_str

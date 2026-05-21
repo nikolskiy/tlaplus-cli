@@ -26,6 +26,7 @@ class WorkspaceConfig(BaseModel):
 class TlcConfig(BaseModel):
     java_class: str = "tlc2.TLC"
     overrides_class: str = "tlc2.overrides.TLCOverrides"
+    refresh_interval: float = 1.0
 
 
 class JavaConfig(BaseModel):

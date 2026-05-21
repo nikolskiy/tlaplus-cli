@@ -139,6 +139,8 @@ class TlcParser:
         if code == codes.TLC_STARTING.num:
             self._parse_starting(message.lines)
             self.result.status = CheckStatus.Starting
+        elif code == codes.TLC_VERSION.num:
+            self.result.process_info = "".join(message.lines).strip()
         elif code == codes.TLC_PROGRESS_STATS.num:
             self._parse_progress_stats(message.lines)
             self.result.status = CheckStatus.SuccessorStatesComputing

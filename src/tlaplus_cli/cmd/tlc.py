@@ -1,11 +1,14 @@
 import typer
+from rich.console import Console
+from rich.live import Live
 
 from tlaplus_cli import ui
 from tlaplus_cli.config.loader import load_config
 from tlaplus_cli.java.classpath import ClasspathResolver
 from tlaplus_cli.project import find_project_root
 from tlaplus_cli.tlc.compiler import get_tlc_jar_path
-from tlaplus_cli.tlc.models import CheckState, CheckStatus, ModelCheckResult
+from tlaplus_cli.tlc.formatter import TlcFormatter
+from tlaplus_cli.tlc.models import CheckState, ModelCheckResult
 from tlaplus_cli.tlc.runner import (
     build_tlc_command,
     get_tlc_version,
@@ -29,18 +32,6 @@ def version_callback(value: bool) -> None:
             typer.echo(version_str)
 
         raise typer.Exit(0)
-
-
-def print_progress(result: ModelCheckResult) -> None:
-    """Callback to print progress from ModelCheckResult."""
-    if result.status == CheckStatus.SuccessorStatesComputing and result.initial_states_stat:
-        last_stat = result.initial_states_stat[-1]
-        # Use carriage return to update the same line for progress
-        msg = f"Progress: {last_stat.total} states generated, {last_stat.distinct} distinct states found"
-        typer.echo(f"\r{msg}", err=True, nl=False)
-    elif result.status == CheckStatus.Finished:
-        # Final newline after progress
-        typer.echo("", err=True)
 
 
 def _show_diagnostic_info(spec: str, spec_name: str) -> None:
@@ -68,7 +59,8 @@ def _show_diagnostic_info(spec: str, spec_name: str) -> None:
 
 # PLR0912: This command handler orchestrates multiple output types (errors, warnings, results, progress);
 # splitting it would fragment the CLI's primary user-facing logic.
-def tlc(  # noqa: PLR0912
+# PLR0915: Too many statements.
+def tlc(  # noqa: PLR0912, PLR0915
     spec: str = typer.Argument(help="Name of the TLA+ specification (without .tla extension)."),
     # Typer requires the parameter in the signature to register the CLI option;
     # since the logic is in the eager callback, the value is not used here.
@@ -80,6 +72,12 @@ def tlc(  # noqa: PLR0912
         is_eager=True,
     ),
     show_command: bool = typer.Option(False, "--show-command", help="Print the command instead of executing it."),
+    refresh_interval: float | None = typer.Option(
+        None,
+        "--refresh-interval",
+        help="Refresh interval for live output in seconds.",
+    ),
+    coverage: bool = typer.Option(False, "--coverage", help="Enable code coverage visualization."),
 ) -> None:
     """Run TLC model checker on a TLA+ specification."""
     # version argument is handled by version_callback (is_eager=True)
@@ -98,37 +96,63 @@ def tlc(  # noqa: PLR0912
         typer.echo(" ".join(cmd))
         raise typer.Exit(0)
 
-    _show_diagnostic_info(spec, spec_name)
+    config = load_config()
+    interval = refresh_interval if refresh_interval is not None else config.tlc.refresh_interval
+
+    formatter = TlcFormatter()
+    layout = formatter.create_layout()
 
     try:
-        # We need the parser to get the final result, so we'll wrap run_tlc
-        # or capture the result from the last callback.
         final_result: list[ModelCheckResult] = []
 
-        def wrapped_callback(res: ModelCheckResult) -> None:
-            print_progress(res)
-            if not final_result:
-                final_result.append(res)
-            else:
-                final_result[0] = res
+        with Live(layout, refresh_per_second=1 / interval, screen=False):
 
-        exit_code = run_tlc(spec, callback=wrapped_callback)
+            def wrapped_callback(res: ModelCheckResult) -> None:
+                formatter.update_header(layout, spec_name, res)
+                formatter.update_stats(layout, res)
+                formatter.update_logs(layout, res)
+
+                if not final_result:
+                    final_result.append(res)
+                else:
+                    final_result[0] = res
+
+            exit_code = run_tlc(spec, callback=wrapped_callback, coverage=coverage)
 
         if final_result:
             res = final_result[0]
+
+            if res.sany_errors:
+                console = Console()
+                spec_file, _ = resolve_spec_file(spec)
+                for sany_err in res.sany_errors:
+                    console.print(formatter.render_sany_error(sany_err, spec_file))
+
             if res.state == CheckState.Success:
                 ui.success("Model checking completed successfully.")
             elif res.state == CheckState.Error:
                 ui.error(f"Model checking failed with {len(res.errors)} error(s).")
                 for err in res.errors:
-                    for line in err.lines:
-                        typer.echo(f"  {line}", err=True)
+                    if err.error_trace:
+                        console = Console()
+                        console.print(formatter.render_error_trace(err.error_trace))
+                    else:
+                        for line in err.lines:
+                            typer.echo(f"  {line}", err=True)
 
             if res.warnings:
                 ui.warn(f"Found {len(res.warnings)} warning(s).")
                 for warn_info in res.warnings:
                     for line in warn_info.lines:
                         typer.echo(f"  {line}", err=True)
+
+            if res.coverage_stat:
+                console = Console()
+                console.print(formatter.render_coverage_table(res.coverage_stat))
+
+                # Show inline coverage for the main spec
+                spec_file, _ = resolve_spec_file(spec)
+                console.print(formatter.render_inline_coverage(res.coverage_stat, spec_file))
 
             if res.duration:
                 ui.info(f"Duration: {res.duration}ms")

@@ -1,4 +1,4 @@
-from src.tlaplus_cli.tlc.values import parse_variable_value
+from tlaplus_cli.tlc.values import parse_variable_value
 
 
 def test_parse_primitive_int():

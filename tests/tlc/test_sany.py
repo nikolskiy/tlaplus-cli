@@ -1,4 +1,4 @@
-from src.tlaplus_cli.tlc.sany import SanyParser
+from tlaplus_cli.tlc.sany import SanyParser
 
 
 def test_parse_sany_errors():

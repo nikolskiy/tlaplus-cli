@@ -6,6 +6,7 @@ Ported and adapted from ts-output-parser/model/check.ts.
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
+from typing import Any
 
 
 class CheckState(Enum):
@@ -127,4 +128,5 @@ class ModelCheckResult:
     workers_count: int = 0
     collision_probability: str | None = None
     output_lines: list[str] = field(default_factory=list)
+    sany_errors: list[Any] = field(default_factory=list)
     trace_file_path: str | None = None
