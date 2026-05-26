@@ -1,8 +1,10 @@
 from dataclasses import dataclass, field
+from datetime import datetime
 from pathlib import Path
 
+from rich.align import Align
+from rich.console import Group
 from rich.layout import Layout
-from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 from rich.tree import Tree
@@ -230,30 +232,59 @@ class TlcFormatter:
         return result
 
     def create_layout(self) -> Layout:
-        """Create the initial layout structure."""
+        """Create the initial layout structure with only the header."""
         layout = Layout()
-        layout.split_column(
-            Layout(name="header", size=3),
-            Layout(name="body"),
-        )
-        layout["body"].split_row(
-            Layout(name="stats", ratio=1),
-            Layout(name="logs", ratio=1),
-        )
+        layout.update(Text("Starting TLC model checker.", style="bold"))
+        # We don't name the root layout, but we can check its children
         return layout
 
-    def update_header(self, layout: Layout, spec_name: str, result: ModelCheckResult) -> None:
-        status_text = result.status.name
-        duration = f"{result.duration}ms" if result.duration else "N/A"
-        version = result.process_info or "unknown"
+    def update(self, layout: Layout, result: ModelCheckResult) -> None:
+        """Main update entry point that manages layout structure and content."""
+        self._ensure_layout_structure(layout, result)
+        self.update_header(layout, result)
+        if self._has_child(layout, "logs"):
+            self.update_logs(layout, result)
+        if self._has_child(layout, "stats"):
+            self.update_stats(layout, result)
+        if self._has_child(layout, "clock"):
+            self.update_clock(layout, result)
 
-        header_text = Text.assemble(
-            ("Running TLC Model Checker on Spec: ", "bold"),
-            (f"{spec_name}.tla", "bold magenta"),
-            ("\n"),
-            (f"TLC version: {version} | Duration: {duration} | Status: {status_text}"),
-        )
-        layout["header"].update(Panel(header_text))
+    def _has_child(self, layout: Layout, name: str) -> bool:
+        """Check if a layout has a child with the given name."""
+        return any(child.name == name for child in layout.children)
+
+    def _ensure_layout_structure(self, layout: Layout, result: ModelCheckResult) -> None:
+        """Dynamically add sections as data becomes available."""
+        has_logs = bool(result.output_lines)
+        has_stats = bool(result.initial_states_stat)
+        # Clock section includes version, duration, status which are available early
+        # but we wait for at least one of them to be "meaningful" or just show it when logs appear?
+        # Let's show it when we have version or duration or start_time
+        has_clock = bool(result.start_date_time or result.process_info or result.duration)
+
+        # Build expected structure
+        new_layouts = [Layout(name="header", size=2)]
+        if has_logs:
+            new_layouts.append(Layout(name="logs", ratio=2))
+        if has_stats:
+            new_layouts.append(Layout(name="stats", ratio=3))
+        if has_clock:
+            new_layouts.append(Layout(name="clock", size=6))
+
+        # Check if we need to update
+        current_names = [lay.name for lay in layout.children]
+        expected_names = [lay.name for lay in new_layouts]
+
+        if current_names != expected_names:
+            layout.split_column(*new_layouts)
+
+    def update_header(self, layout: Layout, _result: ModelCheckResult) -> None:
+        """Update header."""
+        # _result is unused for now but kept for signature consistency
+        if self._has_child(layout, "header"):
+            layout["header"].update(Text("Starting TLC model checker.", style="bold"))
+        else:
+            layout.update(Text("Starting TLC model checker.", style="bold"))
 
     def update_stats(self, layout: Layout, result: ModelCheckResult) -> None:
         table = Table(title="State Space Progress", expand=True)
@@ -271,9 +302,10 @@ class TlcFormatter:
                 f"{item.distinct:,}",
                 f"{item.queue_size:,}",
             )
-        layout["stats"].update(Panel(table))
+        layout["stats"].update(table)
 
     def update_logs(self, layout: Layout, result: ModelCheckResult) -> None:
+        """Update logs panel with TLC output."""
         deduped_logs: list[str] = []
         temp_dedup = LogDeduplicator()
         for line in result.output_lines:
@@ -283,8 +315,34 @@ class TlcFormatter:
             else:
                 deduped_logs.append(processed)
 
-        log_text = Text()
+        log_lines = Text()
         for line in deduped_logs[-10:]:
-            log_text.append(f"{line}\n")
+            log_lines.append(f"{line}\n")
 
-        layout["logs"].update(Panel(log_text, title="LOGS (Warnings & Errors)"))
+        layout["logs"].update(Group(Align.center(Text("TLC instance info", style="bold")), log_lines))
+
+    def update_clock(self, layout: Layout, result: ModelCheckResult) -> None:
+        """Update info panel at the bottom with clock and TLC stats."""
+        status_text = result.status.name
+        duration = f"{result.duration}ms" if result.duration else "N/A"
+        version = result.process_info or "unknown"
+
+        if not result.start_date_time:
+            elapsed_str = "00:00:00"
+            elapsed_style = "dim"
+        else:
+            elapsed = datetime.now() - result.start_date_time
+            seconds = int(elapsed.total_seconds())
+            hours, remainder = divmod(seconds, 3600)
+            minutes, seconds = divmod(remainder, 60)
+            elapsed_str = f"{hours:02}:{minutes:02}:{seconds:02}"
+            elapsed_style = "bold cyan"
+
+        info_text = Text()
+        info_text.append(f"Elapsed time: {elapsed_str}\n", style=elapsed_style)
+        info_text.append(f"TLC version: {version}\n")
+        info_text.append(f"Duration: {duration}\n")
+        info_text.append(f"Status: {status_text}\n")
+        info_text.append("Stop with Ctrl + C", style="yellow")
+
+        layout["clock"].update(info_text)

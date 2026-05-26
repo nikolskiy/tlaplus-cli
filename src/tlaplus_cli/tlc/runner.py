@@ -96,20 +96,30 @@ def run_tlc(spec: str, callback: Callable[[ModelCheckResult], None] | None = Non
             text=True,
             bufsize=1,
         ) as process:
-            if process.stdout:
-                for line in process.stdout:
-                    if line.startswith("@!@!@"):
-                        parser.process_line(line)
-                    else:
-                        sany_parser.process_line(line)
-                        # We also pass non-SANY, non-TLC-tool-mode lines to the TLC parser
-                        # so they end up in output_lines
-                        parser.process_line(line)
+            try:
+                if process.stdout:
+                    for line in process.stdout:
+                        if line.startswith("@!@!@"):
+                            parser.process_line(line)
+                        else:
+                            sany_parser.process_line(line)
+                            # We also pass non-SANY, non-TLC-tool-mode lines to the TLC parser
+                            # so they end up in output_lines
+                            parser.process_line(line)
 
-                    if callback:
-                        res = parser.get_result()
-                        res.sany_errors = sany_parser.get_errors()
-                        callback(res)
+                        if callback:
+                            res = parser.get_result()
+                            res.sany_errors = sany_parser.get_errors()
+                            callback(res)
+            except KeyboardInterrupt:
+                # Stop the TLC process gracefully
+                process.terminate()
+                # Parse remaining output if any
+                if process.stdout:
+                    for line in process.stdout:
+                        parser.process_line(line)
+                        if callback:
+                            callback(parser.get_result())
 
             process.wait()
             return process.returncode

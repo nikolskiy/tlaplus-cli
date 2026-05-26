@@ -82,7 +82,7 @@ def tlc(  # noqa: PLR0912, PLR0915
     """Run TLC model checker on a TLA+ specification."""
     # version argument is handled by version_callback (is_eager=True)
     try:
-        _, spec_name = resolve_spec_file(spec)
+        _, _spec_name = resolve_spec_file(spec)
     except FileNotFoundError as e:
         ui.error(str(e))
         raise typer.Exit(1) from None
@@ -108,9 +108,7 @@ def tlc(  # noqa: PLR0912, PLR0915
         with Live(layout, refresh_per_second=1 / interval, screen=False):
 
             def wrapped_callback(res: ModelCheckResult) -> None:
-                formatter.update_header(layout, spec_name, res)
-                formatter.update_stats(layout, res)
-                formatter.update_logs(layout, res)
+                formatter.update(layout, res)
 
                 if not final_result:
                     final_result.append(res)
