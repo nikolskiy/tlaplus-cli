@@ -2,8 +2,9 @@ from datetime import datetime, timedelta
 
 from rich.table import Table
 
-from tlaplus_cli.tlc.formatter import LogDeduplicator, TlcFormatter
+from tlaplus_cli.tlc.formatter import LogDeduplicator, StatusInfoRenderable, TlcFormatter
 from tlaplus_cli.tlc.models import (
+    CheckState,
     CheckStatus,
     CoverageItem,
     InitialStateStatItem,
@@ -126,20 +127,18 @@ def test_render_coverage(tmp_path):
 
 
 def test_update_header():
-    formatter = TlcFormatter()
+    formatter = TlcFormatter(tlc_version="2.18")
     layout = formatter.create_layout()
     result = ModelCheckResult()
     result.status = CheckStatus.Starting
-    result.process_info = "2.18"
     result.duration = 1234
 
     formatter.update(layout, result)
 
     header_text = layout["header"].renderable.plain
 
-    assert "Starting TLC model checker." in header_text
-    # These should NOT be in the header anymore
-    assert "TLC version: 2.18" not in header_text
+    assert "Starting TLC model checker (version 2.18)." in header_text
+    # These should NOT be in the header as they moved to bottom
     assert "Duration: 1234ms" not in header_text
     assert "Status: Starting" not in header_text
 
@@ -159,31 +158,42 @@ def test_update_logs():
 
 
 def test_update_clock():
-    formatter = TlcFormatter()
+    formatter = TlcFormatter(tlc_version="2.18")
     layout = formatter.create_layout()
     result = ModelCheckResult()
     result.status = CheckStatus.Starting
-    result.process_info = "2.18"
     result.duration = 1234
     result.start_date_time = datetime.now() - timedelta(seconds=65)
 
     formatter.update(layout, result)
 
-    clock_text = layout["clock"].renderable.plain
+    renderable = layout["clock"].renderable
+    assert isinstance(renderable, StatusInfoRenderable)
+    group = renderable.__rich__()
+    assert "Status Info" in group.renderables[0].renderable.plain
+    clock_text = group.renderables[1].plain
     assert "Elapsed time: 00:01:05" in clock_text
-    assert "TLC version: 2.18" in clock_text
-    assert "Duration: 1234ms" in clock_text
+    # TLC version should NOT be in the bottom anymore
+    assert "TLC version: 2.18" not in clock_text
+    assert "Duration: 1234ms" not in clock_text
     assert "Status: Starting" in clock_text
     assert "Stop with Ctrl + C" in clock_text
 
+    # Test stopped state
+    result.state = CheckState.Stopped
+    group = renderable.__rich__()
+    clock_text_stopped = group.renderables[1].plain
+    assert "Status: canceled" in clock_text_stopped
+    assert "Stop with Ctrl + C" not in clock_text_stopped
+
 
 def test_initial_layout_state():
-    formatter = TlcFormatter()
+    formatter = TlcFormatter(tlc_version="2.18")
     layout = formatter.create_layout()
 
     # Only one child initially (not yet split)
     assert len(layout.children) == 0
-    assert "Starting TLC model checker." in layout.renderable.plain
+    assert "Starting TLC model checker (version 2.18)." in layout.renderable.plain
 
     # Add logs
     result = ModelCheckResult()
@@ -200,7 +210,11 @@ def test_initial_layout_state():
     formatter.update(layout, result)
     assert "stats" in [lay.name for lay in layout.children]
 
-    # Add clock info
-    result.process_info = "2.18"
+    # Add clock info (duration makes it visible)
+    result.duration = 100
     formatter.update(layout, result)
     assert "clock" in [lay.name for lay in layout.children]
+    renderable = layout["clock"].renderable
+    assert isinstance(renderable, StatusInfoRenderable)
+    clock_group = renderable.__rich__()
+    assert "Status Info" in clock_group.renderables[0].renderable.plain

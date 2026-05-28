@@ -8,7 +8,7 @@ from tlaplus_cli.java import validate_java_version
 from tlaplus_cli.java.classpath import ClasspathResolver, ResolveMode
 from tlaplus_cli.project import find_project_root
 from tlaplus_cli.tlc.compiler import get_tlc_jar_path
-from tlaplus_cli.tlc.models import ModelCheckResult
+from tlaplus_cli.tlc.models import CheckState, ModelCheckResult
 from tlaplus_cli.tlc.parser import TlcParser
 from tlaplus_cli.tlc.sany import SanyParser
 
@@ -67,7 +67,7 @@ def build_tlc_command(spec: str) -> list[str]:
     ]
 
 
-def run_tlc(spec: str, callback: Callable[[ModelCheckResult], None] | None = None, coverage: bool = False) -> int:
+def run_tlc(spec: str, callback: Callable[[ModelCheckResult], None] | None = None, coverage: bool = False) -> int:  # noqa: PLR0912
     """Run TLC model checker on a TLA+ specification. Returns exit code."""
     config = load_config()
     validate_java_version(config.java.min_version)
@@ -120,6 +120,11 @@ def run_tlc(spec: str, callback: Callable[[ModelCheckResult], None] | None = Non
                         parser.process_line(line)
                         if callback:
                             callback(parser.get_result())
+
+                if callback:
+                    res = parser.get_result()
+                    res.state = CheckState.Stopped
+                    callback(res)
 
             process.wait()
             return process.returncode

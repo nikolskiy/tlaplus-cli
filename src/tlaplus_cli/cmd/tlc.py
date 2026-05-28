@@ -72,10 +72,10 @@ def tlc(  # noqa: PLR0912, PLR0915
         is_eager=True,
     ),
     show_command: bool = typer.Option(False, "--show-command", help="Print the command instead of executing it."),
-    refresh_interval: float | None = typer.Option(
+    _refresh_interval: float | None = typer.Option(
         None,
         "--refresh-interval",
-        help="Refresh interval for live output in seconds.",
+        help="Refresh interval for the output (seconds).",
     ),
     coverage: bool = typer.Option(False, "--coverage", help="Enable code coverage visualization."),
 ) -> None:
@@ -88,24 +88,22 @@ def tlc(  # noqa: PLR0912, PLR0915
         raise typer.Exit(1) from None
 
     if show_command:
-        try:
-            cmd = build_tlc_command(spec)
-        except FileNotFoundError as e:
-            ui.error(str(e))
+        cmd = build_tlc_command(spec)
+        if coverage:
+            cmd.extend(["-coverage", "1"])
+        if not cmd:
             raise typer.Exit(1) from None
         typer.echo(" ".join(cmd))
         raise typer.Exit(0)
 
-    config = load_config()
-    interval = refresh_interval if refresh_interval is not None else config.tlc.refresh_interval
-
-    formatter = TlcFormatter()
+    tlc_version = get_tlc_version() or "unknown"
+    formatter = TlcFormatter(tlc_version=tlc_version)
     layout = formatter.create_layout()
 
     try:
         final_result: list[ModelCheckResult] = []
 
-        with Live(layout, refresh_per_second=1 / interval, screen=False):
+        with Live(layout, refresh_per_second=4, screen=False):
 
             def wrapped_callback(res: ModelCheckResult) -> None:
                 formatter.update(layout, res)
