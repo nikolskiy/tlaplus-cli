@@ -5,7 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.6.0] - 2026-05-29
+
+### Added
+- Dynamic, borderless terminal UI for `tla tlc` using `rich.console.Group`.
+- Smoothly updating "Elapsed time" display that ticks independently of TLC output (4Hz refresh rate).
+- Graceful `KeyboardInterrupt` (Ctrl+C) handling for `tla tlc` that stops the process, parses remaining output, and marks the status as "canceled".
+- Infinite scrolling support for the "State Space Progress" table in the `tla tlc` output.
+
+### Changed
+- Relocated TLC version information to the primary header of the `tla tlc` output.
+- Reorganized `tla tlc` output layout order: Header, Status Info, Logs, and State Space Progress.
+- `tla tlc` logs section title is now centered and no longer underlined.
+
 
 ## [0.5.0] - 2026-05-03
 
