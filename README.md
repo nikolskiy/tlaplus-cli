@@ -4,6 +4,8 @@ Command-line tool for working with TLA+ specifications and the TLC model checker
 
 ## Installation
 
+### Using uv (Recommended)
+
 Install system-wide via uv tool:
 
 ```bash
@@ -19,6 +21,24 @@ Uninstall:
 ```bash
 uv tool uninstall tlaplus-cli
 ```
+
+### Using Nix Flakes
+
+The project includes a `flake.nix` providing a packaged binary and a development shell.
+
+Install system-wide using Nix:
+
+```bash
+nix profile install github:nikolskiy/tlaplus-cli
+```
+
+Or build and run without installing:
+
+```bash
+nix run github:nikolskiy/tlaplus-cli -- --help
+```
+
+For local development, `nix develop` provides an isolated environment with `python3.12`, `uv`, and `ruff` configured to use the Nix-provided Python interpreter.
 
 ## Usage
 
@@ -263,4 +283,44 @@ This package is distributed on PyPI as **`tlaplus-cli`** but imports as **`tla`*
 ## Dependencies
 
 *   **Java >= 11**: Required for TLC.
-*   [**uv**](https://docs.astral.sh/uv/getting-started/installation/): For installing the tool.
+*   [**uv**](https://docs.astral.sh/uv/getting-started/installation/): Recommended for installing the tool and managing dependencies.
+*   [**Nix**](https://nixos.org/download.html): (Optional) Alternative way to install, run, and develop the tool via flakes.
+
+## Development
+
+If you're using Nix for local development, the included `flake.nix` provides a reproducible environment.
+
+### Prerequisites
+
+> [!IMPORTANT]
+> Nix flakes only see files that are **tracked by Git**. You must stage `flake.nix` (and any other new files) before running any `nix` command:
+> ```bash
+> git add flake.nix
+> ```
+
+### Test the Development Shell
+
+```bash
+nix develop
+```
+
+**What happens:**
+1. Nix provides `python3.12`, `uv`, and `ruff` in your `$PATH`.
+2. Environment variables force `uv` to use the Nix-provided Python interpreter (`UV_PYTHON`) and prevent standalone Python downloads (`UV_PYTHON_DOWNLOADS=never`).
+3. The shell automatically runs `uv sync` and sources `.venv/bin/activate`.
+
+### Test the Package Build
+
+```bash
+nix build
+```
+
+This builds the package and produces `./result/bin/tla`. You can test the generated binary:
+
+```bash
+./result/bin/tla --help
+```
+
+### Dependency Mapping Reference
+
+If you modify `pyproject.toml` dependencies, ensure they are also updated in `flake.nix`'s `dependencies` by mapping them to their `python312Packages.*` equivalents.
