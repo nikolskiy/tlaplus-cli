@@ -1,7 +1,7 @@
 from tlaplus_cli.cli import app
 
 
-def test_tlc_classpath_includes_project_classes(mock_tlc_env, tmp_path, base_settings, runner):
+def test_tlc_classpath_includes_project_classes(mock_tlc_env, tmp_path, base_settings, runner, mock_cache):
     """When a classes/ directory exists next to the spec, it must appear in the JVM classpath."""
     project_dir = tmp_path / "my_project"
     spec_dir = project_dir
@@ -20,7 +20,7 @@ def test_tlc_classpath_includes_project_classes(mock_tlc_env, tmp_path, base_set
     assert str(project_dir / "classes") in classpath
 
 
-def test_tlc_classpath_includes_lib_jars(mock_tlc_env, tmp_path, base_settings, runner):
+def test_tlc_classpath_includes_lib_jars(mock_tlc_env, tmp_path, base_settings, runner, mock_cache):
     """When a lib/ directory with JARs exists, they must appear in the JVM classpath."""
     project_dir = tmp_path / "my_project"
     spec_dir = project_dir / "spec"
@@ -42,7 +42,7 @@ def test_tlc_classpath_includes_lib_jars(mock_tlc_env, tmp_path, base_settings, 
     assert str(extra_jar) in classpath
 
 
-def test_tlc_tla_library_set_when_modules_dir_exists(mock_tlc_env, tmp_path, base_settings, runner):
+def test_tlc_tla_library_set_when_modules_dir_exists(mock_tlc_env, tmp_path, base_settings, runner, mock_cache):
     """-DTLA-Library is set when a modules/ directory is found."""
     project_dir = tmp_path / "my_project"
     spec_dir = project_dir / "tests"
@@ -60,7 +60,7 @@ def test_tlc_tla_library_set_when_modules_dir_exists(mock_tlc_env, tmp_path, bas
     assert f"-DTLA-Library={modules_dir}" in cmd
 
 
-def test_tlc_no_project_dirs_no_extra_classpath(mock_tlc_env, tmp_path, base_settings, runner):
+def test_tlc_no_project_dirs_no_extra_classpath(mock_tlc_env, tmp_path, base_settings, runner, mock_cache):
     """A spec without adjacent project dirs has no extra classpath entries."""
     spec_dir = tmp_path / "standalone"
     spec_dir.mkdir()

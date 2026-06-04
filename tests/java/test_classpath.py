@@ -136,3 +136,64 @@ def test_get_project_path(base_settings, tmp_path):
     assert resolver.get_project_path(SubdirType.MODULES) == modules_dir
     assert resolver.get_project_path(SubdirType.CLASSES) == classes_dir
     assert resolver.get_project_path(SubdirType.LIB) == lib_dir
+
+
+def test_cached_modules_resolved(base_settings, tmp_path, mocker):
+    """Test that ClasspathResolver scans the global cache and includes cached modules."""
+    # Mock get_modules_dir to point to our tmp_path / "modules"
+    modules_cache_dir = tmp_path / "modules"
+    modules_cache_dir.mkdir(parents=True, exist_ok=True)
+    mocker.patch("tlaplus_cli.java.classpath.get_modules_dir", return_value=modules_cache_dir)
+
+    # Set up mock module 'module-a'
+    mod_a = modules_cache_dir / "module-a"
+    mod_a.mkdir()
+    (mod_a / "classes").mkdir()
+    (mod_a / "classes" / "SomeClass.class").touch()
+    (mod_a / "lib").mkdir()
+    (mod_a / "lib" / "dep.jar").touch()
+    (mod_a / "modules").mkdir()
+    (mod_a / "modules" / "ModuleA.tla").touch()
+
+    # Set up mock module 'module-b'
+    mod_b = modules_cache_dir / "module-b"
+    mod_b.mkdir()
+    (mod_b / "classes").mkdir()
+    (mod_b / "lib").mkdir()
+    (mod_b / "lib" / "dep2.jar").touch()
+    (mod_b / "modules").mkdir()
+
+    # Setup resolver
+    tool_jar = tmp_path / "tla2tools.jar"
+    tool_jar.touch()
+    resolver = ClasspathResolver(base_settings, project_root=None, tool_jar=tool_jar)
+
+    # 1. Test classpath in RUNTIME mode
+    cp = resolver.resolve(ResolveMode.RUNTIME)
+
+    # Should contain tool_jar
+    assert str(tool_jar.absolute()) in cp
+    # Should contain classes dirs of cached modules
+    assert str((mod_a / "classes").absolute()) in cp
+    assert str((mod_b / "classes").absolute()) in cp
+    # Should contain lib jars of cached modules
+    assert str((mod_a / "lib" / "dep.jar").absolute()) in cp
+    assert str((mod_b / "lib" / "dep2.jar").absolute()) in cp
+
+    # Verify sorting or ordering - classes should generally shadow tool_jar
+    assert cp.index(str((mod_a / "classes").absolute())) < cp.index(str(tool_jar.absolute()))
+
+    # 2. Test classpath in COMPILE mode
+    cp_compile = resolver.resolve(ResolveMode.COMPILE)
+    assert str(tool_jar.absolute()) in cp_compile
+    assert str((mod_a / "classes").absolute()) in cp_compile
+    assert str((mod_b / "classes").absolute()) in cp_compile
+    assert str((mod_a / "lib" / "dep.jar").absolute()) in cp_compile
+    assert str((mod_b / "lib" / "dep2.jar").absolute()) in cp_compile
+
+    # 3. Test TLA-Library paths
+    tla_library = resolver.get_tla_library_property()
+    paths = tla_library.split(os.pathsep) if tla_library else []
+
+    assert str((mod_a / "modules").absolute()) in paths
+    assert str((mod_b / "modules").absolute()) in paths

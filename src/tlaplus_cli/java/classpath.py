@@ -84,7 +84,7 @@ class ClasspathResolver:
 
         return None
 
-    def _resolve_paths(self, cli_paths: list[str], subdir: SubdirType, config_path: str | None) -> list[str]:
+    def _resolve_paths(self, cli_paths: list[str], subdir: SubdirType, config_path: str | None) -> list[str]:  # noqa: PLR0912
         """
         Resolves a set of paths following the hierarchy.
         Deduplicates while preserving order.
@@ -106,10 +106,19 @@ class ClasspathResolver:
         # 4. Managed Modules (Global Cache)
         managed_dir = get_modules_dir()
         if managed_dir.is_dir():
-            # Add all subdirectories of managed_dir to raw_paths so they are expanded for JARs
-            for item in managed_dir.iterdir():
+            # Add all subdirectories of managed_dir to raw_paths so they are expanded for JARs/TLA files
+            for item in sorted(managed_dir.iterdir()):
                 if item.is_dir():
-                    raw_paths.append(str(item.absolute()))
+                    if subdir == SubdirType.LIB:
+                        mod_lib = item / "lib"
+                        if mod_lib.is_dir():
+                            raw_paths.append(str(mod_lib.absolute()))
+                        raw_paths.append(str(item.absolute()))  # Legacy fallback
+                    elif subdir == SubdirType.MODULES:
+                        mod_modules = item / "modules"
+                        if mod_modules.is_dir():
+                            raw_paths.append(str(mod_modules.absolute()))
+                        raw_paths.append(str(item.absolute()))  # Legacy fallback
 
         # Deduplicate while preserving order
         seen = set()
@@ -141,9 +150,19 @@ class ClasspathResolver:
 
         # In RUNTIME mode, custom classes shadow everything
         if mode == ResolveMode.RUNTIME:
+            # Project-local classes
             classes_dir = self.get_project_path(SubdirType.CLASSES)
             if classes_dir:
                 classpath.append(str(classes_dir.absolute()))
+
+        # Cached module classes are included as dependencies in all modes (RUNTIME & COMPILE)
+        managed_dir = get_modules_dir()
+        if managed_dir.is_dir():
+            for item in sorted(managed_dir.iterdir()):
+                if item.is_dir():
+                    mod_classes = item / "classes"
+                    if mod_classes.is_dir():
+                        classpath.append(str(mod_classes.absolute()))
 
         # Tool JAR
         if self.tool_jar:

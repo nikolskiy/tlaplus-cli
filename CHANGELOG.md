@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [unreleased]
+
+### Added
+- `tla modules add <PATH>` — compiles Java overrides and copy subfolders (`lib/`, `modules/`, `test/` or `tests/`) into a global user cache directory per module.
+- `tla modules list` — displays a formatted table of all added modules and their built/modified times.
+- `tla modules remove <NAME>` — deletes a module and its compiled assets from the cache.
+- Automatic cleanup of the cached module directory if the Java compilation fails.
+
+### Changed
+- `tla modules path` — simplified to a read-only command showing the active resolved paths (Source, Classes, and Library JARs) from all cached modules.
+- Dynamic classpath resolution: TLC automatically appends/prepends compiled classes, libraries (`lib/*.jar`), and TLA sources (`modules/`) from all globally added modules.
+- Cached module classes are now available as dependencies in compile mode (`ResolveMode.COMPILE`) letting custom modules compile against other cached modules.
+
+### Removed
+- `tla modules lib` command.
+- `tla modules install-community` command.
+
 ## [0.6.0] - 2026-05-29
 
 ### Added
