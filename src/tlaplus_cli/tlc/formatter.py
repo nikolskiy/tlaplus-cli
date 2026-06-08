@@ -1,17 +1,21 @@
 from dataclasses import dataclass, field
-from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from rich.align import Align
 from rich.console import Group
 from rich.layout import Layout
 from rich.table import Table
 from rich.text import Text
 from rich.tree import Tree
 
+from tlaplus_cli.tlc.components import (
+    HeaderComponent,
+    LogDeduplicator,
+    LogsComponent,
+    StatsTableComponent,
+    StatusInfoComponent,
+)
 from tlaplus_cli.tlc.models import (
-    CheckState,
     CoverageItem,
     ErrorTraceItem,
     ModelCheckResult,
@@ -71,30 +75,16 @@ class ValueDiff:
     children: list["ValueDiff"] = field(default_factory=list)
 
 
-class LogDeduplicator:
-    """Groups consecutive identical logs into a single line with a count badge."""
-
-    def __init__(self) -> None:
-        self.last_line: str | None = None
-        self.count: int = 1
-
-    def process(self, line: str) -> str:
-        stripped_line = line.strip()
-        if stripped_line == self.last_line:
-            self.count += 1
-            return f"{stripped_line} ({self.count})"
-
-        self.last_line = stripped_line
-        self.count = 1
-        return stripped_line
-
-
 class TlcFormatter:
     """Generates Rich layout for TLC model checking."""
 
     def __init__(self, tlc_version: str = "unknown") -> None:
         self.info_dedup = LogDeduplicator()
         self.tlc_version = tlc_version
+        self.header_comp = HeaderComponent(tlc_version)
+        self.status_info_comp = StatusInfoComponent()
+        self.logs_comp = LogsComponent(limit=10)
+        self.stats_comp = StatsTableComponent()
 
     def render_sany_error(self, error: SanyMessage, spec_path: Path) -> Text:
         """Render SANY error with source code highlight."""
@@ -280,7 +270,7 @@ class TlcFormatter:
     def create_layout(self) -> Any:
         """Create the initial layout structure with only the header."""
         layout = TlcDisplay()
-        layout.update(Text(f"Starting TLC model checker (version {self.tlc_version}).", style="bold"))
+        layout.update(self.header_comp.render(ModelCheckResult()))
         return layout
 
     def update(self, layout: Any, result: ModelCheckResult) -> None:
@@ -324,49 +314,22 @@ class TlcFormatter:
         if current_names != expected_names:
             layout.split_column(*new_layouts)
 
-    def update_header(self, layout: Any, _result: ModelCheckResult) -> None:
+    def update_header(self, layout: Any, result: ModelCheckResult) -> None:
         """Update header."""
-        # _result is unused for now but kept for signature consistency
-        header_text = Text(f"Starting TLC model checker (version {self.tlc_version}).", style="bold")
+        header_text = self.header_comp.render(result)
         if self._has_child(layout, "header"):
             layout["header"].update(header_text)
         else:
             layout.update(header_text)
 
     def update_stats(self, layout: Layout, result: ModelCheckResult) -> None:
-        table = Table(title="State Space Progress", expand=True)
-        table.add_column("Time")
-        table.add_column("Diameter", justify="right")
-        table.add_column("Found", justify="right")
-        table.add_column("Distinct", justify="right")
-        table.add_column("Queue", justify="right")
-
-        for item in result.initial_states_stat:
-            table.add_row(
-                item.timestamp,
-                str(item.diameter),
-                f"{item.total:,}",
-                f"{item.distinct:,}",
-                f"{item.queue_size:,}",
-            )
+        table = self.stats_comp.render(result)
         layout["stats"].update(table)
 
     def update_logs(self, layout: Layout, result: ModelCheckResult) -> None:
         """Update logs panel with TLC output."""
-        deduped_logs: list[str] = []
-        temp_dedup = LogDeduplicator()
-        for line in result.output_lines:
-            processed = temp_dedup.process(line)
-            if temp_dedup.count > 1 and deduped_logs:
-                deduped_logs[-1] = processed
-            else:
-                deduped_logs.append(processed)
-
-        log_lines = Text()
-        for line in deduped_logs[-10:]:
-            log_lines.append(f"{line}\n")
-
-        layout["logs"].update(Group(Align.center(Text("TLC instance info", style="bold")), log_lines))
+        group = self.logs_comp.render(result)
+        layout["logs"].update(group)
 
     def update_clock(self, layout: Layout, result: ModelCheckResult) -> None:
         """Update info panel at the bottom with clock and TLC stats."""
@@ -381,29 +344,5 @@ class StatusInfoRenderable:
 
     def __rich__(self) -> Group:
         """Render the status info group."""
-        status_text = self.result.status.name
-        if self.result.state == CheckState.Stopped:
-            status_text = "canceled"
-
-        if not self.result.start_date_time:
-            elapsed_str = "00:00:00"
-            elapsed_style = "dim"
-        else:
-            if self.result.state == CheckState.Running:
-                elapsed = datetime.now() - self.result.start_date_time
-            else:
-                elapsed = (self.result.end_date_time or datetime.now()) - self.result.start_date_time
-            seconds = int(elapsed.total_seconds())
-            hours, remainder = divmod(seconds, 3600)
-            minutes, seconds = divmod(remainder, 60)
-            elapsed_str = f"{hours:02}:{minutes:02}:{seconds:02}"
-            elapsed_style = "bold cyan"
-
-        info_text = Text()
-        info_text.append(f"Elapsed time: {elapsed_str}\n", style=elapsed_style)
-        info_text.append(f"Status: {status_text}\n")
-
-        if self.result.state == CheckState.Running:
-            info_text.append("Stop with Ctrl + C", style="yellow")
-
-        return Group(Align.center(Text("Status Info", style="bold")), info_text)
+        comp = StatusInfoComponent()
+        return comp.render(self.result)

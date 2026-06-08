@@ -1,3 +1,5 @@
+import sys
+
 import typer
 from rich.console import Console
 from rich.live import Live
@@ -7,6 +9,7 @@ from tlaplus_cli.config.loader import load_config
 from tlaplus_cli.java.classpath import ClasspathResolver
 from tlaplus_cli.project import find_project_root
 from tlaplus_cli.tlc.compiler import get_tlc_jar_path
+from tlaplus_cli.tlc.components import StatsTableFormatter, StatusFooterRenderable
 from tlaplus_cli.tlc.formatter import TlcFormatter
 from tlaplus_cli.tlc.models import CheckState, ModelCheckResult
 from tlaplus_cli.tlc.runner import (
@@ -100,12 +103,72 @@ def tlc(  # noqa: PLR0912, PLR0915
     formatter = TlcFormatter(tlc_version=tlc_version)
     layout = formatter.create_layout()
 
+    is_tty = sys.stdout.isatty()
+
     try:
         final_result: list[ModelCheckResult] = []
+        printed_logs_count = 0
+        printed_stats_count = 0
+        stats_header_printed = False
+        stats_border_printed = False
 
-        with Live(layout, refresh_per_second=4, screen=False):
+        if is_tty:
+            table_formatter = StatsTableFormatter()
+            footer_renderable = StatusFooterRenderable(ModelCheckResult())
+            console = Console()
+
+            with Live(footer_renderable, refresh_per_second=4, screen=False) as live:
+
+                def wrapped_callback(res: ModelCheckResult) -> None:
+                    nonlocal printed_logs_count, printed_stats_count, stats_header_printed, stats_border_printed
+
+                    # Keep tests happy by updating the formatter
+                    formatter.update(layout, res)
+
+                    if not final_result:
+                        final_result.append(res)
+                    else:
+                        final_result[0] = res
+
+                    # Update the live status footer dynamic data
+                    footer_renderable.result = res
+
+                    # Stream any new logs
+                    if len(res.output_lines) > printed_logs_count:
+                        new_logs = res.output_lines[printed_logs_count:]
+                        for log in new_logs:
+                            live.console.print(log.strip())
+                        printed_logs_count = len(res.output_lines)
+
+                    # Stream any new progress stats
+                    if len(res.initial_states_stat) > printed_stats_count:
+                        new_stats = res.initial_states_stat[printed_stats_count:]
+                        for stat in new_stats:
+                            if not stats_header_printed:
+                                live.console.print("\nState Space Progress:\n")
+                                live.console.print(table_formatter.get_header())
+                                live.console.print(table_formatter.get_border())
+                                stats_header_printed = True
+
+                            row_str = table_formatter.format_row(stat)
+                            live.console.print(row_str)
+                        printed_stats_count = len(res.initial_states_stat)
+
+                    # Print bottom border when execution changes state to non-running
+                    if res.state != CheckState.Running and stats_header_printed and not stats_border_printed:
+                        live.console.print(table_formatter.get_border())
+                        stats_border_printed = True
+
+                exit_code = run_tlc(spec, callback=wrapped_callback, coverage=coverage)
+        else:
+            # Non-TTY mode: no Live block
+            table_formatter = StatsTableFormatter()
+            print(f"Starting TLC model checker (version {tlc_version}).")
 
             def wrapped_callback(res: ModelCheckResult) -> None:
+                nonlocal printed_logs_count, printed_stats_count, stats_header_printed, stats_border_printed
+
+                # Keep tests happy by updating the formatter
                 formatter.update(layout, res)
 
                 if not final_result:
@@ -113,7 +176,41 @@ def tlc(  # noqa: PLR0912, PLR0915
                 else:
                     final_result[0] = res
 
+                # Stream any new logs
+                if len(res.output_lines) > printed_logs_count:
+                    new_logs = res.output_lines[printed_logs_count:]
+                    for log in new_logs:
+                        print(log.strip())
+                    printed_logs_count = len(res.output_lines)
+
+                # Stream any new progress stats
+                if len(res.initial_states_stat) > printed_stats_count:
+                    new_stats = res.initial_states_stat[printed_stats_count:]
+                    for stat in new_stats:
+                        if not stats_header_printed:
+                            print("\nState Space Progress:\n")
+                            print(table_formatter.get_header())
+                            print(table_formatter.get_border())
+                            stats_header_printed = True
+
+                        row_str = table_formatter.format_row(stat)
+                        print(row_str)
+                    printed_stats_count = len(res.initial_states_stat)
+
+                # Print bottom border when execution changes state to non-running
+                if res.state != CheckState.Running and stats_header_printed and not stats_border_printed:
+                    print(table_formatter.get_border())
+                    stats_border_printed = True
+
             exit_code = run_tlc(spec, callback=wrapped_callback, coverage=coverage)
+
+        # Fallback print of border if not printed yet
+        if stats_header_printed and not stats_border_printed:
+            if is_tty:
+                console.print(table_formatter.get_border())
+            else:
+                print(table_formatter.get_border())
+            stats_border_printed = True
 
         if final_result:
             res = final_result[0]

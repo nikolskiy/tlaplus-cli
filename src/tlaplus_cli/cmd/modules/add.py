@@ -14,7 +14,7 @@ from tlaplus_cli.versioning.paths import get_modules_dir
 
 
 def add_module(  # noqa: PLR0915
-    path: str = typer.Argument(..., help="Path to the module directory to add.")
+    path: str = typer.Argument(..., help="Path to the module directory to add."),
 ) -> None:
     """Compile custom Java overrides and add/update the module in the cache."""
     source_dir = Path(path).resolve()

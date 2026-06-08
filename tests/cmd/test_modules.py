@@ -121,7 +121,6 @@ def test_modules_add_compilation_failure(mocker, tmp_path, runner):
     assert not target_cache_dir.exists()
 
 
-
 def test_modules_list(mocker, tmp_path, runner):
     """Test that 'tla modules list' outputs a clean table of cached modules."""
     config.load_config.cache_clear()
@@ -283,4 +282,3 @@ def test_modules_add_nested_overrides(mocker, tmp_path, runner):
     assert (target_cache_dir / "classes").exists()
     assert (target_cache_dir / "classes" / "META-INF" / "services" / "tlc2.overrides.ITLCOverrides").exists()
     assert (target_cache_dir / "modules" / "tlc2" / "overrides" / "MyNestedOverride.java").exists()
-

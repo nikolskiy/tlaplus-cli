@@ -2,6 +2,16 @@ from datetime import datetime, timedelta
 
 from rich.table import Table
 
+from tlaplus_cli.tlc.components import (
+    HeaderComponent,
+    LogsComponent,
+    StatsTableComponent,
+    StatsTableFormatter,
+    StatusFooterComponent,
+    StatusFooterRenderable,
+    StatusInfoComponent,
+    TlcDisplayComposer,
+)
 from tlaplus_cli.tlc.formatter import LogDeduplicator, StatusInfoRenderable, TlcFormatter
 from tlaplus_cli.tlc.models import (
     CheckState,
@@ -218,3 +228,119 @@ def test_initial_layout_state():
     assert isinstance(renderable, StatusInfoRenderable)
     clock_group = renderable.__rich__()
     assert "Status Info" in clock_group.renderables[0].renderable.plain
+
+
+def test_header_component():
+    comp = HeaderComponent(tlc_version="2.18")
+    res = comp.render(ModelCheckResult())
+    assert "Starting TLC model checker (version 2.18)." in res.plain
+
+
+def test_status_info_component():
+    comp = StatusInfoComponent()
+    result = ModelCheckResult()
+    result.start_date_time = datetime.now() - timedelta(seconds=12)
+    result.status = CheckStatus.SuccessorStatesComputing
+
+    group = comp.render(result)
+    text = group.renderables[1].plain
+    assert "Elapsed time: 00:00:12" in text
+    assert "Status: SuccessorStatesComputing" in text
+    assert "Stop with Ctrl + C" in text
+
+
+def test_logs_component():
+    comp = LogsComponent(limit=2)
+    result = ModelCheckResult()
+    result.output_lines = ["Line 1", "Line 2", "Line 3"]
+
+    group = comp.render(result)
+    text = group.renderables[1].plain
+    assert "Line 1" not in text
+    assert "Line 2" in text
+    assert "Line 3" in text
+
+
+def test_stats_table_component():
+    comp = StatsTableComponent(limit=1)
+    result = ModelCheckResult()
+    result.initial_states_stat = [
+        InitialStateStatItem("00:00:01", 1, 10, 5, 2),
+        InitialStateStatItem("00:00:02", 2, 20, 10, 4),
+    ]
+
+    table = comp.render(result)
+    assert len(table.rows) == 1
+    # Check cell values
+    assert table.columns[0]._cells[0] == "00:00:02"
+
+
+def test_status_footer_component():
+    comp = StatusFooterComponent()
+    result = ModelCheckResult()
+    result.start_date_time = datetime.now() - timedelta(seconds=10)
+    result.status = CheckStatus.CheckingLiveness
+    result.initial_states_stat = [InitialStateStatItem("00:00:01", 3, 100, 50, 10)]
+
+    footer = comp.render(result)
+    plain = footer.plain
+    assert "TLC Status: CheckingLiveness" in plain
+    assert "Elapsed: 00:00:10" in plain
+    assert "Diam: 3" in plain
+    assert "Gen: 100" in plain
+    assert "Queue: 10" in plain
+
+
+def test_display_composer():
+    composer = TlcDisplayComposer()
+    composer.register("header", HeaderComponent(tlc_version="1.0"))
+
+    res = composer.render("header", ModelCheckResult())
+    assert "Starting TLC model checker (version 1.0)." in res.plain
+
+
+def test_stats_table_formatter():
+    formatter = StatsTableFormatter(value_col_width=14)
+
+    header = formatter.get_header()
+    assert "Diameter" in header
+    assert "Found" in header
+    assert "Distinct" in header
+    assert "Queue" in header
+    assert "Date" in header
+    assert "Time" in header
+
+    border = formatter.get_border()
+    assert "─" in border
+    assert len(border) == len(header)
+
+    item = InitialStateStatItem("2026-06-04 22:01:23", 13, 607490, 100461, 49848)
+    row = formatter.format_row(item)
+
+    assert "607,490" in row
+    assert "100,461" in row
+    assert "49,848" in row
+    assert "2026-06-04" in row
+    assert "22:01:23" in row
+    assert "13" in row
+    assert len(row) == len(header)
+
+
+def test_status_footer_renderable():
+    result = ModelCheckResult()
+    result.start_date_time = datetime.now() - timedelta(seconds=184)
+    result.status = CheckStatus.SuccessorStatesComputing
+    result.state = CheckState.Running
+
+    renderable = StatusFooterRenderable(result)
+    footer = renderable.__rich__()
+    plain = footer.plain
+
+    assert "Elapsed:  00:03:04" in plain
+    assert "TLC Status: SuccessorStatesComputing" in plain
+    assert "Stop with Ctrl + C" in plain
+
+    result.state = CheckState.Success
+    footer = renderable.__rich__()
+    plain = footer.plain
+    assert "Stop with Ctrl + C" not in plain
