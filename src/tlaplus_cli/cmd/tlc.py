@@ -81,6 +81,7 @@ def tlc(  # noqa: PLR0912, PLR0915
         help="Refresh interval for the output (seconds).",
     ),
     coverage: bool = typer.Option(False, "--coverage", help="Enable code coverage visualization."),
+    raw: bool = typer.Option(False, "--raw", help="Run TLC in raw mode without structured tool mode formatting."),
 ) -> None:
     """Run TLC model checker on a TLA+ specification."""
     # version argument is handled by version_callback (is_eager=True)
@@ -98,6 +99,10 @@ def tlc(  # noqa: PLR0912, PLR0915
             raise typer.Exit(1) from None
         typer.echo(" ".join(cmd))
         raise typer.Exit(0)
+
+    if raw:
+        exit_code = run_tlc(spec, coverage=coverage, raw=True)
+        raise typer.Exit(exit_code)
 
     tlc_version = get_tlc_version() or "unknown"
     formatter = TlcFormatter(tlc_version=tlc_version)

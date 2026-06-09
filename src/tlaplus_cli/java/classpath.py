@@ -155,6 +155,10 @@ class ClasspathResolver:
             if classes_dir:
                 classpath.append(str(classes_dir.absolute()))
 
+            # Module source directories containing .tla files
+            modules = self._resolve_paths(self.extra_modules, SubdirType.MODULES, self.config.module_path)
+            classpath.extend(modules)
+
         # Cached module classes are included as dependencies in all modes (RUNTIME & COMPILE)
         managed_dir = get_modules_dir()
         if managed_dir.is_dir():

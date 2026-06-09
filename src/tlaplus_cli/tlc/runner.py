@@ -1,5 +1,7 @@
+import contextlib
 import os
 import subprocess
+import sys
 from collections.abc import Callable
 from pathlib import Path
 
@@ -56,6 +58,11 @@ def build_tlc_command(spec: str) -> list[str]:
     if tla_library:
         extra_jvm_opts.append(f"-DTLA-Library={tla_library}")
 
+    spec_arg = spec_file.name
+    if project_root:
+        with contextlib.suppress(ValueError):
+            spec_arg = str(spec_file.relative_to(project_root))
+
     return [
         "java",
         *config.java.opts,
@@ -63,11 +70,16 @@ def build_tlc_command(spec: str) -> list[str]:
         "-cp",
         classpath,
         config.tlc.java_class,
-        spec_file.name,
+        spec_arg,
     ]
 
 
-def run_tlc(spec: str, callback: Callable[[ModelCheckResult], None] | None = None, coverage: bool = False) -> int:  # noqa: PLR0912
+def run_tlc(  # noqa: PLR0912, PLR0915
+    spec: str,
+    callback: Callable[[ModelCheckResult], None] | None = None,
+    coverage: bool = False,
+    raw: bool = False,
+) -> int:
     """Run TLC model checker on a TLA+ specification. Returns exit code."""
     config = load_config()
     validate_java_version(config.java.min_version)
@@ -75,8 +87,8 @@ def run_tlc(spec: str, callback: Callable[[ModelCheckResult], None] | None = Non
     spec_file, _ = resolve_spec_file(spec)
     cmd = build_tlc_command(spec)
 
-    # Ensure tool mode is enabled for structured output
-    if "-tool" not in cmd:
+    # Ensure tool mode is enabled for structured output (unless in raw mode)
+    if not raw and "-tool" not in cmd:
         cmd.insert(-1, "-tool")
 
     if coverage and "-coverage" not in cmd:
@@ -84,13 +96,45 @@ def run_tlc(spec: str, callback: Callable[[ModelCheckResult], None] | None = Non
         cmd.insert(-1, "-coverage")
         cmd.insert(-1, "1")
 
+    project_root = find_project_root(
+        spec_file, modules_dir=config.workspace.modules_dir, classes_dir=config.workspace.classes_dir
+    )
+    cwd = project_root if project_root else spec_file.parent
+
+    if raw:
+        try:
+            with subprocess.Popen(
+                cmd,
+                cwd=str(cwd),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                bufsize=1,
+            ) as process:
+                try:
+                    if process.stdout:
+                        for line in process.stdout:
+                            sys.stdout.write(line)
+                            sys.stdout.flush()
+                except KeyboardInterrupt:
+                    process.terminate()
+                    if process.stdout:
+                        for line in process.stdout:
+                            sys.stdout.write(line)
+                            sys.stdout.flush()
+                process.wait()
+                return process.returncode
+        except (subprocess.SubprocessError, OSError):
+            msg = "'java' not found. Please install Java."
+            raise FileNotFoundError(msg) from None
+
     parser = TlcParser()
     sany_parser = SanyParser()
 
     try:
         with subprocess.Popen(
             cmd,
-            cwd=str(spec_file.parent),
+            cwd=str(cwd),
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
