@@ -6,7 +6,16 @@ from tlaplus_cli.tlc.models import CheckState
 
 
 def test_tlc_integration(
-    mocker, tmp_path, capfd, queue_dir, base_settings, monkeypatch, runner, java_available, javac_available
+    mocker,
+    tmp_path,
+    capfd,
+    queue_dir,
+    base_settings,
+    monkeypatch,
+    runner,
+    java_available,
+    javac_available,
+    compile_test_modules_fixture,
 ):
     """
     Integration test for run_tlc.tlc().
@@ -28,11 +37,6 @@ def test_tlc_integration(
     mocker.patch("tlaplus_cli.tlc.runner.load_config", return_value=base_settings)
     mocker.patch("tlaplus_cli.tlc.runner.validate_java_version")
 
-    # We also need to patch build_tlc_module's config loading to compile first
-    mocker.patch("tlaplus_cli.tlc.compiler.load_config", return_value=base_settings)
-    # Patch workspace_root for build_tlc_module
-    mocker.patch("tlaplus_cli.tlc.compiler.workspace_root", return_value=queue_dir)
-
     captured_result = None
     original_update_logs = TlcFormatter.update_logs
 
@@ -44,8 +48,8 @@ def test_tlc_integration(
     mocker.patch("tlaplus_cli.cmd.tlc.TlcFormatter.update_logs", mock_update_logs)
 
     # 1. Compile modules
-    res_build = runner.invoke(app, ["modules", "build"])
-    assert res_build.exit_code == 0, f"Module compilation failed: {res_build.stdout}"
+    compile_test_modules_fixture(queue_dir, classes_dir, base_settings)
+
     # 2. Run TLC
     # Verify that classes_dir is populated
     assert (classes_dir / "tlc2/overrides/TLCOverrides.class").exists()

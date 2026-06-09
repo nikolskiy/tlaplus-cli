@@ -2,8 +2,6 @@ import typer
 
 app = typer.Typer(name="modules", help="Manage TLA+ Java modules.", no_args_is_help=True)
 
-# Register build (registers itself via decorator)
-from . import build  # noqa: E402, F401
 
 # Import functions for new commands
 from .add import add_module  # noqa: E402

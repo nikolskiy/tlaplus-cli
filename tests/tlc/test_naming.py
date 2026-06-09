@@ -25,6 +25,7 @@ def test_tlc_overrides_naming_works(
     setup_naming_env_fixture,
     java_available,
     javac_available,
+    compile_test_modules_fixture,
 ):
     """
     Tests that naming the class 'TLCOverrides' in 'tlc2.overrides' package works.
@@ -47,8 +48,7 @@ def test_tlc_overrides_naming_works(
 
     mocker.patch("tlaplus_cli.cmd.tlc.TlcFormatter.update_logs", mock_update_logs)
 
-    res_build = runner.invoke(app, ["modules", "build"])
-    assert res_build.exit_code == 0, f"Module compilation failed: {res_build.stdout}"
+    compile_test_modules_fixture(naming_fixed_dir, tmp_path / "classes", base_settings)
 
     monkeypatch.chdir(naming_fixed_dir)
     res_tlc = runner.invoke(app, ["tlc", "test_spec"])
@@ -70,6 +70,7 @@ def test_module_name_class_naming_fails(
     setup_naming_env_fixture,
     java_available,
     javac_available,
+    compile_test_modules_fixture,
 ):
     """
     Tests that naming the class after the module ('TestModule') fails to load the override.
@@ -93,8 +94,7 @@ def test_module_name_class_naming_fails(
 
     mocker.patch("tlaplus_cli.cmd.tlc.TlcFormatter.update_logs", mock_update_logs)
 
-    res_build = runner.invoke(app, ["modules", "build"])
-    assert res_build.exit_code == 0, f"Module compilation failed: {res_build.stdout}"
+    compile_test_modules_fixture(naming_dynamic_dir, tmp_path / "classes", base_settings)
 
     monkeypatch.chdir(naming_dynamic_dir)
     res_tlc = runner.invoke(app, ["tlc", "test_spec"])
