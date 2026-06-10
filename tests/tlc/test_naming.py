@@ -18,7 +18,6 @@ def test_tlc_overrides_naming_works(
     tmp_path,
     mocker,
     base_settings,
-    capfd,
     naming_fixed_dir,
     monkeypatch,
     runner,
@@ -59,11 +58,10 @@ def test_tlc_overrides_naming_works(
     assert "OVERRIDE_ACTIVE_TLCOverrides" in output_lines_str, "TLCOverrides approach should work but failed!"
 
 
-def test_module_name_class_naming_fails(
+def test_module_name_class_naming_succeeds(
     tmp_path,
     mocker,
     base_settings,
-    capfd,
     naming_dynamic_dir,
     monkeypatch,
     runner,
@@ -73,9 +71,8 @@ def test_module_name_class_naming_fails(
     compile_test_modules_fixture,
 ):
     """
-    Tests that naming the class after the module ('TestModule') fails to load the override.
-    According to current TLC behavior, this doesn't work. We want this test to pass
-    as long as the behavior remains broken, so we are alerted if/when TLC fixes this.
+    Tests that naming the class after the module ('TestModule') succeeds in loading the override.
+    This works because the CLI dynamically discovers classes implementing ITLCOverrides.
     """
     if not java_available:
         pytest.skip("java not found")
@@ -103,9 +100,6 @@ def test_module_name_class_naming_fails(
     assert captured_result is not None
     output_lines_str = "\n".join(captured_result.output_lines)
 
-    # If this assertion fails, it means TLC updated its underlying library to actually support
-    # module-named classes! In that case, we should update our documentation and change this test.
-    assert "OVERRIDE_ACTIVE_TestModule" not in output_lines_str, (
-        "EXPECTED FAILURE: Naming the class after the module (TestModule.java) actually worked! "
-        "TLC behavior has changed. Update docs to reflect this new capability."
+    assert "OVERRIDE_ACTIVE_TestModule" in output_lines_str, (
+        "Dynamic class naming (naming the override class TestModule instead of TLCOverrides) failed to load!"
     )

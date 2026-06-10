@@ -36,6 +36,33 @@ def resolve_spec_file(spec: str) -> tuple[Path, str]:
     return spec_file.absolute(), spec_file.name
 
 
+def get_override_classes(classpath: list[str]) -> list[str]:
+    """Inspect all classpath directories and locate override classes."""
+    classes = []
+    for path_str in classpath:
+        path = Path(path_str)
+        if path.is_dir():
+            service_file = path / "META-INF" / "services" / "tlc2.overrides.ITLCOverrides"
+            if service_file.is_file():
+                try:
+                    for raw_line in service_file.read_text(encoding="utf-8").splitlines():
+                        cleaned_line = raw_line.strip()
+                        if cleaned_line and not cleaned_line.startswith("#"):
+                            classes.append(cleaned_line)
+                except OSError:
+                    pass
+            elif (path / "tlc2" / "overrides" / "TLCOverrides.class").is_file():
+                classes.append("tlc2.overrides.TLCOverrides")
+
+    seen = set()
+    deduped = []
+    for cls in classes:
+        if cls not in seen:
+            seen.add(cls)
+            deduped.append(cls)
+    return deduped
+
+
 def build_tlc_command(spec: str) -> list[str]:
     """Build the java command for running TLC."""
     config = load_config()
@@ -51,12 +78,17 @@ def build_tlc_command(spec: str) -> list[str]:
     )
 
     resolver = ClasspathResolver(config, project_root=project_root, tool_jar=jar_path)
-    classpath = os.pathsep.join(resolver.resolve(ResolveMode.RUNTIME))
+    classpath_resolved = resolver.resolve(ResolveMode.RUNTIME)
+    classpath = os.pathsep.join(classpath_resolved)
 
     extra_jvm_opts: list[str] = []
     tla_library = resolver.get_tla_library_property()
     if tla_library:
         extra_jvm_opts.append(f"-DTLA-Library={tla_library}")
+
+    override_classes = get_override_classes(classpath_resolved)
+    if override_classes:
+        extra_jvm_opts.append(f"-Dtlc2.overrides.TLCOverrides={os.pathsep.join(override_classes)}")
 
     spec_arg = spec_file.name
     if project_root:

@@ -1,6 +1,7 @@
 import datetime
 import json
 import os
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -13,7 +14,36 @@ from tlaplus_cli.tlc.compiler import get_tlc_jar_path
 from tlaplus_cli.versioning.paths import get_modules_dir
 
 
-def add_module(  # noqa: PLR0915
+def find_override_classes(java_files: list[Path]) -> list[str]:
+    """Find all class names implementing ITLCOverrides in Java files."""
+    override_classes = []
+    package_pattern = re.compile(r"package\s+([a-zA-Z0-9_.]+)\s*;")
+    class_pattern = re.compile(
+        r"\bclass\s+([a-zA-Z0-9_]+)\b[^{]*\bimplements\b[^{]*\b(tlc2\.overrides\.)?ITLCOverrides\b"
+    )
+
+    for jf in java_files:
+        try:
+            content = jf.read_text(encoding="utf-8", errors="ignore")
+        except OSError:
+            continue
+
+        # Strip comments to prevent false matches
+        content_no_comments = re.sub(r"//.*", "", content)
+        content_no_comments = re.sub(r"/\*.*?\*/", "", content_no_comments, flags=re.DOTALL)
+
+        package_match = package_pattern.search(content_no_comments)
+        package_name = package_match.group(1) if package_match else ""
+
+        for match in class_pattern.finditer(content_no_comments):
+            class_name = match.group(1)
+            full_class_name = f"{package_name}.{class_name}" if package_name else class_name
+            override_classes.append(full_class_name)
+
+    return override_classes
+
+
+def add_module(  # noqa: PLR0912, PLR0915
     path: str = typer.Argument(..., help="Path to the module directory to add."),
 ) -> None:
     """Compile custom Java overrides and add/update the module in the cache."""
@@ -91,8 +121,14 @@ def add_module(  # noqa: PLR0915
         meta_inf = classes_dir / "META-INF" / "services"
         meta_inf.mkdir(parents=True, exist_ok=True)
         service_file = meta_inf / "tlc2.overrides.ITLCOverrides"
+
+        override_classes = find_override_classes(java_files)
+        if not override_classes:
+            override_classes = [config.tlc.overrides_class]
+
         with service_file.open("w") as f:
-            f.write(f"{config.tlc.overrides_class}\n")
+            for cls in override_classes:
+                f.write(f"{cls}\n")
 
     # 3. Create metadata.json
     metadata = {"name": module_name, "built_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}

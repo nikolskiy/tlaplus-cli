@@ -3,6 +3,7 @@ import subprocess
 
 import pytest
 
+from tlaplus_cli.cmd.modules.add import find_override_classes
 from tlaplus_cli.java.classpath import ClasspathResolver, ResolveMode
 from tlaplus_cli.tlc.compiler import get_tlc_jar_path
 
@@ -54,7 +55,13 @@ def compile_test_modules_fixture():
         meta_inf = classes_dir / "META-INF" / "services"
         meta_inf.mkdir(parents=True, exist_ok=True)
         service_file = meta_inf / "tlc2.overrides.ITLCOverrides"
+
+        override_classes = find_override_classes(java_files)
+        if not override_classes:
+            override_classes = [settings.tlc.overrides_class]
+
         with service_file.open("w") as f:
-            f.write(f"{settings.tlc.overrides_class}\n")
+            for cls in override_classes:
+                f.write(f"{cls}\n")
 
     return _compile
