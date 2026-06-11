@@ -5,9 +5,9 @@ import tlc2.overrides.TLAPlusOperator;
 import tlc2.value.impl.BoolValue;
 import tlc2.value.impl.Value;
 
-public class TLCOverrides implements ITLCOverrides {
+public class QueueOverrides implements ITLCOverrides {
 
-    @TLAPlusOperator(identifier = "LogState", module = "QueueUtils")
+    @TLAPlusOperator(identifier = "LogState", module = "QueueUtils", warn = false)
     public static Value LogState(final Value buffer, final Value waitSet) {
         System.out.println("State log test: buffer=" + buffer + ", wait_set=" + waitSet);
         return BoolValue.ValTrue;
@@ -15,6 +15,6 @@ public class TLCOverrides implements ITLCOverrides {
 
     @Override
     public Class[] get() {
-        return new Class[]{TLCOverrides.class};
+        return new Class[]{QueueOverrides.class};
     }
 }

@@ -9,11 +9,6 @@ from tlaplus_cli.tlc.compiler import get_tlc_jar_path
 
 
 @pytest.fixture
-def queue_dir(fixtures_dir):
-    return fixtures_dir / "queue"
-
-
-@pytest.fixture
 def setup_naming_env_fixture(mocker):
     """Fixture providing the setup_naming_env helper."""
 

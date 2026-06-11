@@ -1,3 +1,7 @@
+import json
+import shutil
+from pathlib import Path
+
 import pytest
 
 from tlaplus_cli.cli import app
@@ -5,37 +9,83 @@ from tlaplus_cli.cmd.tlc import TlcFormatter
 from tlaplus_cli.tlc.models import CheckState
 
 
+def find_real_tla2tools_jar() -> Path | None:
+    real_tools_dir = Path.home() / ".cache" / "tla" / "tools"
+    if real_tools_dir.is_dir():
+        for jar_path in real_tools_dir.glob("**/tla2tools.jar"):
+            if jar_path.exists():
+                return jar_path
+    return None
+
+
 def test_tlc_integration(
     mocker,
     tmp_path,
-    capfd,
-    queue_dir,
-    base_settings,
-    monkeypatch,
     runner,
     java_available,
     javac_available,
-    compile_test_modules_fixture,
+    base_settings,
+    monkeypatch,
+    mock_cache,
 ):
     """
-    Integration test for run_tlc.tlc().
-    1. Compiles the modules (prerequisite).
-    2. Runs TLC on queue.tla.
-    3. Verifies output.
+    Integration test for run_tlc.tlc() and QueueModule.
+    1. Locates the real tla2tools.jar from user's cache and copies it to mock cache tools dir.
+    2. Runs 'tla modules add' on QueueModule.
+    3. Runs TLC on queue spec.
+    4. Verifies that Java overrides are loaded successfully and the spec succeeds.
     """
     if not java_available:
         pytest.skip("java not found")
     if not javac_available:
         pytest.skip("javac not found")
 
-    classes_dir = tmp_path / "classes"
+    real_jar = find_real_tla2tools_jar()
+    if not real_jar or not real_jar.exists():
+        pytest.skip("real tla2tools.jar not found in cache")
 
-    # Configure base_settings
-    base_settings.workspace.root = queue_dir
-    base_settings.workspace.classes_dir = classes_dir
+    # 1. Setup mocked cache tools directory with real tla2tools.jar
+    version_name = real_jar.parent.name  # e.g. "v1.8.0-8ba1027"
+    tools_dir = mock_cache / "tools"
+    version_dir = tools_dir / version_name
+    version_dir.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(real_jar, version_dir / "tla2tools.jar")
 
+    # Write metadata so list/pin works
+    meta = {
+        "version": version_name.split("-")[0],
+        "tag_commit": version_name.split("-")[1] if "-" in version_name else "",
+        "download_url": "mock_url",
+        "published_at": "2026-06-04 12:00:00",
+    }
+    (version_dir / "meta-tla2tools.json").write_text(json.dumps(meta))
+
+    # Pin this version
+    pin_file = tools_dir / "tools-pinned-version.txt"
+    pin_file.write_text(version_name)
+
+    # 2. Configure base_settings for workspace root
+    proj_root = Path(__file__).parent.parent.parent
+    spec_dir = proj_root / "docs" / "examples" / "spec"
+    base_settings.workspace.root = str(proj_root / "docs" / "examples")
     mocker.patch("tlaplus_cli.tlc.runner.load_config", return_value=base_settings)
+    mocker.patch("tlaplus_cli.cmd.modules.add.load_config", return_value=base_settings)
     mocker.patch("tlaplus_cli.tlc.runner.validate_java_version")
+
+    # 3. Add the QueueModule using 'modules add' command
+    repo_queue_dir = proj_root / "docs" / "examples" / "QueueModule"
+    assert repo_queue_dir.is_dir(), f"QueueModule repository not found at {repo_queue_dir}"
+
+    res_add = runner.invoke(app, ["modules", "add", str(repo_queue_dir)])
+    assert res_add.exit_code == 0, f"modules add failed: {res_add.output}"
+
+    # Verify files compiled and ITLCOverrides service file created
+    classes_dir = mock_cache / "modules" / "QueueModule" / "classes"
+    assert (classes_dir / "tlc2" / "overrides" / "QueueOverrides.class").exists()
+    assert (classes_dir / "META-INF" / "services" / "tlc2.overrides.ITLCOverrides").exists()
+
+    # 4. Run TLC on 'queue' spec
+    monkeypatch.chdir(spec_dir)
 
     captured_result = None
     original_update_logs = TlcFormatter.update_logs
@@ -47,21 +97,12 @@ def test_tlc_integration(
 
     mocker.patch("tlaplus_cli.cmd.tlc.TlcFormatter.update_logs", mock_update_logs)
 
-    # 1. Compile modules
-    compile_test_modules_fixture(queue_dir, classes_dir, base_settings)
-
-    # 2. Run TLC
-    # Verify that classes_dir is populated
-    assert (classes_dir / "tlc2/overrides/TLCOverrides.class").exists()
-
-    # Run TLC on "queue" spec
-    monkeypatch.chdir(queue_dir)
     res_tlc = runner.invoke(app, ["tlc", "queue"])
     assert res_tlc.exit_code == 0, f"TLC run failed: {res_tlc.stdout}"
 
-    # 3. Verify output
+    # 5. Verify the logs and state
     assert captured_result is not None
     assert captured_result.state == CheckState.Success
 
     output_lines_str = "\n".join(captured_result.output_lines)
-    assert "State log test:" in output_lines_str
+    assert "State log test: buffer=" in output_lines_str
