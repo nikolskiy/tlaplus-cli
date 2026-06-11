@@ -68,7 +68,7 @@ dev = [
 
 [tool.pytest.ini_options]
 addopts = "--cov=tlaplus_cli --cov-report=term-missing"
-testpaths = ["tests"]
+testpaths = ["tests/unit"]
 
 [tool.ruff]
 line-length = 120
