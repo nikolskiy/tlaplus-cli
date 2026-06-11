@@ -12,6 +12,7 @@ repos:
         entry: uv run check-added-large-files
         language: system
         types: [file]
+        exclude: ^docs/examples/sequences-ext/lib/commons-lang3-3.12.0.jar$
 
       - id: check-yaml
         name: Check YAML

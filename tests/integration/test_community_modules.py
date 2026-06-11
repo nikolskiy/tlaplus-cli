@@ -66,21 +66,22 @@ def test_community_modules_integration(
     pin_file.write_text(version_name)
 
     # 2. Configure base_settings for workspace root
-    spec_dir = fixtures_dir / "community_modules" / "spec"
-    base_settings.workspace.root = str(fixtures_dir / "community_modules")
+    proj_root = Path(__file__).parent.parent.parent
+    spec_dir = proj_root / "docs" / "examples" / "spec"
+    base_settings.workspace.root = str(proj_root / "docs" / "examples")
     mocker.patch("tlaplus_cli.tlc.runner.load_config", return_value=base_settings)
     mocker.patch("tlaplus_cli.cmd.modules.add.load_config", return_value=base_settings)
     mocker.patch("tlaplus_cli.tlc.runner.validate_java_version")
 
-    # 3. Add the CommunityModules module using 'modules add' command
-    repo_cm_dir = Path(__file__).parent.parent.parent / "module-examples" / "CommunityModules"
-    assert repo_cm_dir.is_dir(), f"CommunityModules repository not found at {repo_cm_dir}"
+    # 3. Add the sequences-ext module using 'modules add' command
+    repo_seq_dir = proj_root / "docs" / "examples" / "sequences-ext"
+    assert repo_seq_dir.is_dir(), f"sequences-ext repository not found at {repo_seq_dir}"
 
-    res_add = runner.invoke(app, ["modules", "add", str(repo_cm_dir)])
+    res_add = runner.invoke(app, ["modules", "add", str(repo_seq_dir)])
     assert res_add.exit_code == 0, f"modules add failed: {res_add.output}"
 
     # Verify files compiled and ITLCOverrides service file created
-    classes_dir = mock_cache / "modules" / "CommunityModules" / "classes"
+    classes_dir = mock_cache / "modules" / "sequences-ext" / "classes"
     assert (classes_dir / "tlc2" / "overrides" / "TLCOverrides.class").exists()
     assert (classes_dir / "META-INF" / "services" / "tlc2.overrides.ITLCOverrides").exists()
 
