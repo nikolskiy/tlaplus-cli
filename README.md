@@ -4,116 +4,15 @@ Command-line tool for working with TLA+ specifications and the TLC model checker
 
 ## Installation
 
-### Using uv (Recommended)
+For detailed installation instructions, please refer to:
+* [Installation via uv tool](docs/installation/uv-tool.md) (Recommended)
+* [Nix Flakes Installation & Development](docs/installation/nix.md)
 
-Install system-wide via uv tool:
-
-```bash
-uv tool install tlaplus-cli
-```
-
-Upgrade:
-```bash
-uv tool upgrade tlaplus-cli
-```
-
-Uninstall:
-```bash
-uv tool uninstall tlaplus-cli
-```
-
-### Using Nix Flakes
-
-The project includes a `flake.nix` providing a packaged binary and a development shell.
-
-Install system-wide using Nix:
-
-```bash
-nix profile install github:nikolskiy/tlaplus-cli
-```
-
-Or build and run without installing:
-
-```bash
-nix run github:nikolskiy/tlaplus-cli -- --help
-```
-
-For local development, `nix develop` provides an isolated environment with `python3.12`, `uv`, and `ruff` configured to use the Nix-provided Python interpreter.
 
 ## Usage
 
-### Managing TLA+ Tools
+For detailed instructions on managing TLA+ toolset versions (`tla2tools.jar`), please refer to [Managing TLA+ Tools](docs/managing-tlaplus-tools/managing-tla2tools.md).
 
-The `tla tools` command group allows you to download and manage multiple versions of the TLA+ toolset (TLC, SANY, TLATeX) directly from GitHub releases. 
-
-List available and installed toolset versions:
-```bash
-tla tools list
-```
-
-Install the latest toolset version:
-```bash
-tla tools install
-```
-
-> [!TIP]
-> The first version you install is automatically "pinned" as the default. Subsequent installs won't change your pin unless you manually use `tla tools pin`.
-
-Install a specific toolset version:
-```bash
-tla tools install v1.8.0
-```
-
-Pin a specific version to be used by default:
-```bash
-tla tools pin v1.8.0
-```
-
-Upgrade the pinned version (or a specific version) to a newer commit:
-```bash
-tla tools upgrade
-```
-
-> [!NOTE]
-> If the target version to upgrade is not yet installed locally, the CLI will automatically download it.
-
-Show the absolute path to the pinned version's `tla2tools.jar`:
-```bash
-tla tools path
-```
-
-Or for a specific version:
-```bash
-tla tools path v1.8.0
-```
-
-Example output:
-```text
-/home/bob/.cache/tla/tools/v1.8.0-5a47802/tla2tools.jar
-```
-
-Show the toolset versions directory and all installed version directories:
-```bash
-tla tools dir
-```
-
-Example output:
-```text
-/home/bob/.cache/tla/tools
-  v1.7.0-abc1234
-  v1.8.0-5a47802
-```
-
-Uninstall a specific version (or use 'default' to remove legacy jars):
-```bash
-tla tools uninstall v1.8.0
-```
-
-> [!TIP]
-> Use `--all` to remove all installed tags for a specific version name without interactive prompts.
-
-> [!NOTE]
-> If you uninstall the currently pinned version, the CLI will automatically "fall back" to the next best installed version (ranked by semver, then release date).
 
 ### Run TLC
 
@@ -129,18 +28,6 @@ For example (runs `queue.tla`):
 tla tlc queue
 ```
 
-#### Project-Aware Execution
-
-The CLI intelligently resolves the specification file and its project structure. It will check the following locations:
-1.  `<spec_name>` (if it's a direct path to a file, e.g., `models/my_model.tla`)
-2.  `<spec_name>.tla`
-3.  `spec/<spec_name>.tla` (checks an inner `spec/` folder relative to the spec's location)
-
-Furthermore, it automatically discovers the **project root** by looking for `modules/`, `classes/`, or `lib/` directories adjacent to the spec file or its parent. When a project root is found:
-- The project's `classes/` directory is added to the Java classpath.
-- Any `*.jar` files found in the project's `lib/` directory are added to the Java classpath.
-- The `-DTLA-Library` system property is set to the project's `modules/` directory, allowing TLC to find your custom Java overrides.
-
 To check the currently pinned `tla2tools.jar` path and its TLC version:
 
 ```bash
@@ -153,61 +40,6 @@ To inspect the exact Java command that will be executed without running it:
 tla tlc <spec_name> --show-command
 ```
 
-### Compile Custom Java Modules
-
-Java modules (overrides) are compiled using the pinned version of the toolset.
-
-Compile modules in the current project:
-```bash
-tla modules build
-```
-
-Compile modules in a specific project path:
-```bash
-tla modules build path/to/project
-```
-
-Configure a persistent custom modules path:
-```bash
-tla modules path /path/to/custom/modules
-```
-
-View or reset the custom modules path:
-```bash
-tla modules path          # View current path
-tla modules path none     # Reset to default
-tla modules path --resolved  # Show fully resolved paths for current context
-```
-
-Configure a persistent custom modules dependencies (lib) path:
-```bash
-tla modules lib /path/to/custom/libs
-```
-
-View or reset the custom lib path:
-```bash
-tla modules lib          # View current path
-tla modules lib none     # Reset to default
-```
-
-> [!TIP]
-> Setting a persistent `module_path` (and optionally `module_lib_path`) allows `tla modules build` and `tla tlc` to resolve your Java overrides regardless of where the commands are executed.
-
-Verbose output:
-```bash
-tla modules build --verbose
-```
-
-Show compilation command:
-```bash
-tla modules build --show-command
-```
-
-The build command:
-1. Resolves the project root (defaults to `workspace.root` from config).
-2. Includes `lib/*.jar` files from the project root in the `javac` classpath.
-3. Compiles `.java` files from the project's `modules/` directory into its `classes/` directory.
-4. Generates the necessary Java service provider configuration for TLC overrides.
 
 ### Check Java Version
 
@@ -223,50 +55,6 @@ The CLI caches GitHub API responses for 1 hour to prevent rate limiting. To clea
 tla fetch-cache clear
 ```
 
-## Configuration
-
-On first run, a default config is created at:
-
-```
-~/.config/tla/config.yaml
-```
-
-You can manage the configuration using the `tla config` command:
-
-```bash
-tla config list          # Display current configuration
-tla config edit          # Open config in default editor ($EDITOR or vim)
-tla config edit nano     # Open config in a specific editor
-```
-
-Example configuration (`config.yaml`):
-
-```yaml
-tla:
-  urls:
-    tags: https://api.github.com/repos/tlaplus/tlaplus/tags
-    releases: https://api.github.com/repos/tlaplus/tlaplus/releases
-
-workspace:
-  root: .                 # Project root (relative to CWD)
-  spec_dir: spec          # Directory containing .tla files
-  modules_dir: modules    # Directory containing .java files
-  classes_dir: classes    # Directory for compiled .class files
-
-tlc:
-  java_class: tlc2.TLC
-  overrides_class: tlc2.overrides.TLCOverrides
-
-module_path: null         # (Optional) Persistent custom modules path
-module_lib_path: null     # (Optional) Persistent custom modules lib path
-
-java:
-  min_version: 11
-  opts:
-    - "-XX:+IgnoreUnrecognizedVMOptions"
-    - "-XX:+UseParallelGC"
-```
-
 ### Directory Layout
 
 | Directory | Purpose | Location |
@@ -276,51 +64,3 @@ java:
 | API Cache | `github_cache.json` | `~/.cache/tla/` |
 | Workspace | specs + modules + classes | Set via `workspace.root` in config |
 
-## Note on Package Name
-
-This package is distributed on PyPI as **`tlaplus-cli`** but imports as **`tla`**. There is a separate, unrelated [`tla`](https://pypi.org/project/tla/) package on PyPI (a TLA+ parser). If you have both installed, they will conflict. In practice this is unlikely since they serve different purposes, but be aware of it.
-
-## Dependencies
-
-*   **Java >= 11**: Required for TLC.
-*   [**uv**](https://docs.astral.sh/uv/getting-started/installation/): Recommended for installing the tool and managing dependencies.
-*   [**Nix**](https://nixos.org/download.html): (Optional) Alternative way to install, run, and develop the tool via flakes.
-
-## Development
-
-If you're using Nix for local development, the included `flake.nix` provides a reproducible environment.
-
-### Prerequisites
-
-> [!IMPORTANT]
-> Nix flakes only see files that are **tracked by Git**. You must stage `flake.nix` (and any other new files) before running any `nix` command:
-> ```bash
-> git add flake.nix
-> ```
-
-### Test the Development Shell
-
-```bash
-nix develop
-```
-
-**What happens:**
-1. Nix provides `python3.12`, `uv`, and `ruff` in your `$PATH`.
-2. Environment variables force `uv` to use the Nix-provided Python interpreter (`UV_PYTHON`) and prevent standalone Python downloads (`UV_PYTHON_DOWNLOADS=never`).
-3. The shell automatically runs `uv sync` and sources `.venv/bin/activate`.
-
-### Test the Package Build
-
-```bash
-nix build
-```
-
-This builds the package and produces `./result/bin/tla`. You can test the generated binary:
-
-```bash
-./result/bin/tla --help
-```
-
-### Dependency Mapping Reference
-
-If you modify `pyproject.toml` dependencies, ensure they are also updated in `flake.nix`'s `dependencies` by mapping them to their `python312Packages.*` equivalents.
