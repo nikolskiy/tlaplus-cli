@@ -12,6 +12,7 @@ Command-line tool for working with TLA+ specifications and the TLC model checker
 
 * [Managing TLA+ Tools](docs/managing-tlaplus-tools/managing-tla2tools.md): Verify Java requirements, manage/pin `tla2tools.jar` versions, and handle cache settings.
 * [Running TLC](docs/tlc/tlc.md): Run the TLC model checker, inspect commands, and execute model checking with custom modules.
+* [Custom Java Modules](docs/java-modules-for-tlc/README.md): Compile, register, and manage custom Java operator overrides for TLC using automated CLI commands.
 
 ## Installation
 
