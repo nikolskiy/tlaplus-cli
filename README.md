@@ -2,65 +2,19 @@
 
 Command-line tool for working with TLA+ specifications and the TLC model checker.
 
+## Project goals
+
+1. Simplify managing TLA+ tools such as TLC, community modules, custom modules, etc.
+2. Run TLA tools in a single CLI interface.
+3. Manage and display the tools outputs.
+
+## Features
+
+* [Managing TLA+ Tools](docs/managing-tlaplus-tools/managing-tla2tools.md): Verify Java requirements, manage/pin `tla2tools.jar` versions, and handle cache settings.
+* [Running TLC](docs/tlc/tlc.md): Run the TLC model checker, inspect commands, and execute model checking with custom modules.
+
 ## Installation
 
 For detailed installation instructions, please refer to:
-* [Installation via uv tool](docs/installation/uv-tool.md) (Recommended)
+* [Installation via uv tool](docs/installation/uv-tool.md)
 * [Nix Flakes Installation & Development](docs/installation/nix.md)
-
-
-## Usage
-
-For detailed instructions on managing TLA+ toolset versions (`tla2tools.jar`), please refer to [Managing TLA+ Tools](docs/managing-tlaplus-tools/managing-tla2tools.md).
-
-
-### Run TLC
-
-Run the TLC model checker on a specification. This uses the currently pinned toolset version.
-
-```bash
-tla tlc <spec_name>
-```
-
-For example (runs `queue.tla`):
-
-```bash
-tla tlc queue
-```
-
-To check the currently pinned `tla2tools.jar` path and its TLC version:
-
-```bash
-tla tlc --version
-```
-
-To inspect the exact Java command that will be executed without running it:
-
-```bash
-tla tlc <spec_name> --show-command
-```
-
-
-### Check Java Version
-
-```bash
-tla check-java
-```
-
-### Cache Management
-
-The CLI caches GitHub API responses for 1 hour to prevent rate limiting. To clear this cache manually:
-
-```bash
-tla fetch-cache clear
-```
-
-### Directory Layout
-
-| Directory | Purpose | Location |
-|---|---|---|
-| Config | `config.yaml` | `~/.config/tla/` |
-| Toolset Versions | Version dirs & `tools-pinned-version.txt` file | `~/.cache/tla/tools/` |
-| API Cache | `github_cache.json` | `~/.cache/tla/` |
-| Workspace | specs + modules + classes | Set via `workspace.root` in config |
-

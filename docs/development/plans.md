@@ -1,15 +1,7 @@
 # Plans for tlaplus-cli
 
-tlaplus-cli goals:
-1. Simplify managing available TLA+ tools such as TLC, community modules, custom modules, etc.
-2. Run TLA tools in a single CLI interface.
-3. Manage and display the tools outputs.
-
-
-### Output improvements
+## Output improvements
 - Show when custom modules are used
-- Show the classpath used to run TLC.
-- Indicate if TLA+ versions of modules or Java versions are used for the specification.
 - Show which version of `tla2tools.jar` is used for running the specification.
 
 ## Managing Local and Remote Instances
