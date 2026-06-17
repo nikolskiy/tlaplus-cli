@@ -7,20 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [unreleased]
 
+## [0.7.0] - 2026-06-17
+
 ### Added
 - `tla modules add <PATH>` — compiles Java overrides and copy subfolders (`lib/`, `modules/`, `test/` or `tests/`) into a global user cache directory per module.
 - `tla modules list` — displays a formatted table of all added modules and their built/modified times.
 - `tla modules remove <NAME>` — deletes a module and its compiled assets from the cache.
 - Automatic cleanup of the cached module directory if the Java compilation fails.
+- Automatic scanning of Java source files for classes implementing `ITLCOverrides` during `tla modules add` to register all custom overrides.
+- Support for multiple active custom module sets by dynamically resolving all registered override classes and configuring them via the `-Dtlc2.overrides.TLCOverrides` system property at runtime.
+- Standardized examples in `docs/examples/`:
+  - `sequences-ext` example featuring comprehensive override implementations for TLA+ sequences (`SequencesExt`), functions (`Functions`), and finite sets (`FiniteSetsExt`).
+  - `QueueModule` example featuring TLA+ queue utilities and custom Java override implementation.
+- Comprehensive documentation updates.
 
 ### Changed
 - `tla modules path` — simplified to a read-only command showing the active resolved paths (Source, Classes, and Library JARs) from all cached modules.
 - Dynamic classpath resolution: TLC automatically appends/prepends compiled classes, libraries (`lib/*.jar`), and TLA sources (`modules/`) from all globally added modules.
 - Cached module classes are now available as dependencies in compile mode (`ResolveMode.COMPILE`) letting custom modules compile against other cached modules.
+- Refactored `tla tlc` output formatting to stream logs and progress statistics line-by-line. In interactive TTY mode, a dynamic, smoothly updating status footer overlay is rendered at the bottom of the screen.
+- Separated `tests/` directory into `tests/unit` and `tests/integration` subdirectories, and updated pytest configuration (`testpaths` in `pyproject.toml`) to only run unit tests by default.
 
 ### Removed
 - `tla modules lib` command.
 - `tla modules install-community` command.
+- `tla modules build` command (superseded by `tla modules add`).
 
 ## [0.6.0] - 2026-05-29
 
