@@ -2,20 +2,39 @@
 
 Command-line tool for working with TLA+ specifications and the TLC model checker.
 
-## Project goals
+## Project Goals
 
 1. Simplify managing TLA+ tools such as TLC, community modules, custom modules, etc.
 2. Run TLA tools in a single CLI interface.
-3. Manage and display the tools outputs.
+3. Manage and display the tool outputs.
 
-## Features
+## Quick Start & Usage
 
-* [Managing TLA+ Tools](docs/managing-tlaplus-tools/managing-tla2tools.md): Verify Java requirements, manage/pin `tla2tools.jar` versions, and handle cache settings.
-* [Running TLC](docs/tlc/tlc.md): Run the TLC model checker, inspect commands, and execute model checking with custom modules.
-* [Custom Java Modules](docs/java-modules-for-tlc/README.md): Compile, register, and manage custom Java operator overrides for TLC using automated CLI commands.
+### 1. Toolset Management (`tla tools`)
+* `tla check-java`: Verify Java installation and compatibility.
+* `tla tools list`: List available and installed toolset versions (`tla2tools.jar`).
+* `tla tools install [vX.Y.Z]`: Download and install a toolset version.
+* `tla tools pin <version>`: Set default toolset version for TLC runs.
 
-## Installation
+### 2. Model Checking (`tla tlc`)
+* `tla tlc <spec>`: Execute TLC model checker on a specification.
+* `tla tlc <spec> --show-command`: Inspect exact JVM command before execution.
 
-For detailed installation instructions, please refer to:
-* [Installation via uv tool](docs/installation/uv-tool.md)
-* [Nix Flakes Installation & Development](docs/installation/nix.md)
+### 3. Custom Java Modules (`tla modules`)
+* `tla modules add <path>`: Compile Java operator overrides and register module in CLI cache.
+* `tla modules list`: Display cached custom modules.
+* `tla modules remove <name>`: Remove custom module from cache.
+
+For complete, runnable specifications and Java module examples, see [docs/examples](docs/examples/).
+
+## Quick Installation
+
+### Via `uv tool`
+```bash
+uv tool install tlaplus-cli
+```
+
+### Via Nix Flakes
+```bash
+nix profile install github:nikolskiy/tlaplus-cli
+```
