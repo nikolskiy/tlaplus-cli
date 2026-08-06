@@ -61,3 +61,13 @@ def test_list_shows_url_installed_version(
     assert "v1.9.0" in result.stdout
     assert ts in result.stdout
     assert "local only" in result.stdout
+
+
+def test_tools_help_shows_list_help_text(runner):
+    """Test 'tla tools --help' displays help text for 'list' subcommand."""
+    result = runner.invoke(app, ["tools", "--help"])
+    assert result.exit_code == 0
+    assert "list" in result.stdout
+    assert "List available and installed TLC versions." in result.stdout
+
+

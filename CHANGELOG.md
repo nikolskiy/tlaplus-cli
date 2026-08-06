@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [unreleased]
 
+### Added
+- `tla --version` — appended short git commit hash for development and editable installations (`v<version>+<short_sha>`) to prevent version ambiguity in bug reports.
+
+### Fixed
+- `tla tools list` — added missing docstring to `list_versions` command so `tla tools --help` output displays subcommand description text.
+
 ## [0.7.0] - 2026-06-17
 
 ### Added

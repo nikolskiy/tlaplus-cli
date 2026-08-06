@@ -15,6 +15,7 @@ from tlaplus_cli.versioning import (
 
 @app.command(name="list")
 def list_versions() -> None:
+    """List available and installed TLC versions."""
     config = load_config()
     versions, status = fetch_remote_versions(config.tla.urls.tags, config.tla.urls.releases, config.tla.urls.per_page)
 

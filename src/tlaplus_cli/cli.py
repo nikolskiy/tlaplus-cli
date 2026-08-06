@@ -11,6 +11,7 @@ from tlaplus_cli.cmd.modules import app as modules_app
 from tlaplus_cli.cmd.tlc import tlc as run_tlc_cmd
 from tlaplus_cli.cmd.tools import app as tools_app
 from tlaplus_cli.config.loader import load_config
+from tlaplus_cli.versioning import get_app_version
 
 app = typer.Typer(
     name="tla",
@@ -23,7 +24,8 @@ app = typer.Typer(
 def version_callback(value: bool) -> None:
     if value:
         meta = importlib.metadata.metadata("tlaplus-cli")
-        typer.echo(f"{meta['Name']} v{meta['Version']}")
+        app_ver = get_app_version(base_version=meta["Version"])
+        typer.echo(f"{meta['Name']} v{app_ver}")
         typer.echo(meta["Summary"])
         raise typer.Exit()
 

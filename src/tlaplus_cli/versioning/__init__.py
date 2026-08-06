@@ -1,4 +1,9 @@
 from tlaplus_cli.versioning.api import fetch_remote_versions
+from tlaplus_cli.versioning.app_version import (
+    get_app_version,
+    get_git_commit_hash,
+    is_editable_install,
+)
 from tlaplus_cli.versioning.downloader import (
     download_version,
     download_version_from_url,
@@ -39,10 +44,13 @@ __all__ = [
     "download_version_from_url",
     "extract_version_from_url",
     "fetch_remote_versions",
+    "get_app_version",
+    "get_git_commit_hash",
     "get_github_cache_file",
     "get_pinned_path",
     "get_pinned_version_dir",
     "get_tools_dir",
+    "is_editable_install",
     "is_url",
     "list_local_versions",
     "read_version_metadata",
