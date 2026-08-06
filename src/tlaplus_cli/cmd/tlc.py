@@ -12,6 +12,7 @@ from tlaplus_cli.tlc.compiler import get_tlc_jar_path
 from tlaplus_cli.tlc.components import StatsTableFormatter, StatusFooterRenderable
 from tlaplus_cli.tlc.formatter import TlcFormatter
 from tlaplus_cli.tlc.models import CheckState, ModelCheckResult
+from tlaplus_cli.tlc.run_cache import clear_tlc_run_cache
 from tlaplus_cli.tlc.runner import (
     build_tlc_command,
     get_tlc_version,
@@ -62,9 +63,13 @@ def _show_diagnostic_info(spec: str, spec_name: str) -> None:
 
 # PLR0912: This command handler orchestrates multiple output types (errors, warnings, results, progress);
 # splitting it would fragment the CLI's primary user-facing logic.
+# PLR0913: CLI command function accepts options as parameters.
 # PLR0915: Too many statements.
-def tlc(  # noqa: PLR0912, PLR0915
-    spec: str = typer.Argument(help="Name of the TLA+ specification (without .tla extension)."),
+def tlc(  # noqa: PLR0912, PLR0913, PLR0915
+    spec: str | None = typer.Argument(
+        None,
+        help="Name of the TLA+ specification (without .tla extension).",
+    ),
     # Typer requires the parameter in the signature to register the CLI option;
     # since the logic is in the eager callback, the value is not used here.
     version: bool | None = typer.Option(  # noqa: ARG001
@@ -75,6 +80,7 @@ def tlc(  # noqa: PLR0912, PLR0915
         is_eager=True,
     ),
     show_command: bool = typer.Option(False, "--show-command", help="Print the command instead of executing it."),
+    cleanup: bool = typer.Option(False, "--cleanup", help="Purge all cached TLC run artifacts from cache."),
     _refresh_interval: float | None = typer.Option(
         None,
         "--refresh-interval",
@@ -84,6 +90,15 @@ def tlc(  # noqa: PLR0912, PLR0915
     raw: bool = typer.Option(False, "--raw", help="Run TLC in raw mode without structured tool mode formatting."),
 ) -> None:
     """Run TLC model checker on a TLA+ specification."""
+    if cleanup:
+        clear_tlc_run_cache()
+        ui.success("TLC run cache cleared successfully.")
+        raise typer.Exit(0)
+
+    if not spec:
+        ui.error("Missing argument 'SPEC'.")
+        raise typer.Exit(1)
+
     # version argument is handled by version_callback (is_eager=True)
     try:
         _, _spec_name = resolve_spec_file(spec)

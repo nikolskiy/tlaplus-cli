@@ -12,6 +12,7 @@ from tlaplus_cli.project import find_project_root
 from tlaplus_cli.tlc.compiler import get_tlc_jar_path
 from tlaplus_cli.tlc.models import CheckState, ModelCheckResult
 from tlaplus_cli.tlc.parser import TlcParser
+from tlaplus_cli.tlc.run_cache import get_spec_run_dir
 from tlaplus_cli.tlc.sany import SanyParser
 
 
@@ -95,6 +96,8 @@ def build_tlc_command(spec: str) -> list[str]:
         with contextlib.suppress(ValueError):
             spec_arg = str(spec_file.relative_to(project_root))
 
+    run_dir = get_spec_run_dir(spec_file)
+
     return [
         "java",
         *config.java.opts,
@@ -102,6 +105,8 @@ def build_tlc_command(spec: str) -> list[str]:
         "-cp",
         classpath,
         config.tlc.java_class,
+        "-metadir",
+        str(run_dir),
         spec_arg,
     ]
 

@@ -2,6 +2,7 @@ import shutil
 
 import typer
 
+from tlaplus_cli.tlc.run_cache import clear_tlc_run_cache
 from tlaplus_cli.versioning.paths import get_modules_dir
 
 
@@ -14,6 +15,7 @@ def remove_module(module_name: str = typer.Argument(..., help="Name of the modul
 
     try:
         shutil.rmtree(target_dir)
+        clear_tlc_run_cache()
         typer.echo(f"Module '{module_name}' successfully deleted from cache.")
     except OSError as e:
         typer.echo(f"Error: Failed to delete module: {e}", err=True)

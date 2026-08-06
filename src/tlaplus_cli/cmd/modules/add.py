@@ -11,6 +11,7 @@ import typer
 from tlaplus_cli.config.loader import load_config
 from tlaplus_cli.java.classpath import ClasspathResolver, ResolveMode
 from tlaplus_cli.tlc.compiler import get_tlc_jar_path
+from tlaplus_cli.tlc.run_cache import clear_tlc_run_cache
 from tlaplus_cli.versioning.paths import get_modules_dir
 
 
@@ -135,4 +136,5 @@ def add_module(  # noqa: PLR0912, PLR0915
     with (target_dir / "metadata.json").open("w") as f:
         json.dump(metadata, f, indent=2)
 
+    clear_tlc_run_cache()
     typer.echo(f"Module '{module_name}' successfully added to cache.")
