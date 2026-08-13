@@ -1,3 +1,5 @@
+import re
+
 from typer.testing import CliRunner
 
 from tlaplus_cli.cli import app
@@ -7,10 +9,13 @@ runner = CliRunner()
 
 def test_tlc_help_coverage():
     """Test that tla tlc --help displays description and options."""
-    result = runner.invoke(app, ["tlc", "--help"])
+    result = runner.invoke(app, ["tlc", "--help"], env={"NO_COLOR": "1", "TERM": "dumb"})
     assert result.exit_code == 0
-    assert "--cleanup" in result.output
-    assert "Purge" in result.output
+    output = re.sub(r"\x1b\[[0-9;]*[a-zA-Z]", "", result.output)
+    assert "--cleanup" in output
+    assert "--cfg" in output
+    assert "Purge" in output
+
 
 
 def test_tlc_cleanup_command(mocker):
