@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [unreleased]
+## [0.8.0] - 2026-08-13
 
 ### Added
 - `--cfg <name>` option to `tla tlc` command to allow running TLC with custom `.cfg` specification configuration files (e.g. `tla tlc spec --cfg spec-v1`).
