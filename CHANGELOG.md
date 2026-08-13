@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.8.1] - 2026-08-13
+
+### Fixed
+- Fixed CLI help coverage test assertion failures on CI environments with forced color output by stripping ANSI escape sequences from rendered help output.
+
 ## [0.8.0] - 2026-08-13
 
 ### Added
