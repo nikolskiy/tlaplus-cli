@@ -16,6 +16,7 @@ from tlaplus_cli.tlc.run_cache import clear_tlc_run_cache
 from tlaplus_cli.tlc.runner import (
     build_tlc_command,
     get_tlc_version,
+    resolve_cfg_file,
     resolve_spec_file,
     run_tlc,
 )
@@ -88,6 +89,11 @@ def tlc(  # noqa: PLR0912, PLR0913, PLR0915
     ),
     coverage: bool = typer.Option(False, "--coverage", help="Enable code coverage visualization."),
     raw: bool = typer.Option(False, "--raw", help="Run TLC in raw mode without structured tool mode formatting."),
+    cfg: str | None = typer.Option(
+        None,
+        "--cfg",
+        help="Custom TLC configuration file name or path (e.g. spec-v1 or spec-v1.cfg).",
+    ),
 ) -> None:
     """Run TLC model checker on a TLA+ specification."""
     if cleanup:
@@ -101,13 +107,21 @@ def tlc(  # noqa: PLR0912, PLR0913, PLR0915
 
     # version argument is handled by version_callback (is_eager=True)
     try:
-        _, _spec_name = resolve_spec_file(spec)
+        spec_file, _spec_name = resolve_spec_file(spec)
+        if cfg:
+            config_obj = load_config()
+            project_root = find_project_root(
+                spec_file,
+                modules_dir=config_obj.workspace.modules_dir,
+                classes_dir=config_obj.workspace.classes_dir,
+            )
+            resolve_cfg_file(cfg, spec_file, project_root=project_root)
     except FileNotFoundError as e:
         ui.error(str(e))
         raise typer.Exit(1) from None
 
     if show_command:
-        cmd = build_tlc_command(spec)
+        cmd = build_tlc_command(spec, cfg=cfg)
         if coverage:
             cmd.extend(["-coverage", "1"])
         if not cmd:
@@ -116,8 +130,9 @@ def tlc(  # noqa: PLR0912, PLR0913, PLR0915
         raise typer.Exit(0)
 
     if raw:
-        exit_code = run_tlc(spec, coverage=coverage, raw=True)
+        exit_code = run_tlc(spec, coverage=coverage, raw=True, cfg=cfg)
         raise typer.Exit(exit_code)
+
 
     tlc_version = get_tlc_version() or "unknown"
     formatter = TlcFormatter(tlc_version=tlc_version)
@@ -179,7 +194,7 @@ def tlc(  # noqa: PLR0912, PLR0913, PLR0915
                         live.console.print(table_formatter.get_border())
                         stats_border_printed = True
 
-                exit_code = run_tlc(spec, callback=wrapped_callback, coverage=coverage)
+                exit_code = run_tlc(spec, callback=wrapped_callback, coverage=coverage, cfg=cfg)
         else:
             # Non-TTY mode: no Live block
             table_formatter = StatsTableFormatter()
@@ -222,7 +237,7 @@ def tlc(  # noqa: PLR0912, PLR0913, PLR0915
                     print(table_formatter.get_border())
                     stats_border_printed = True
 
-            exit_code = run_tlc(spec, callback=wrapped_callback, coverage=coverage)
+            exit_code = run_tlc(spec, callback=wrapped_callback, coverage=coverage, cfg=cfg)
 
         # Fallback print of border if not printed yet
         if stats_header_printed and not stats_border_printed:

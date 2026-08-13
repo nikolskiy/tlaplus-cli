@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [unreleased]
 
 ### Added
+- `--cfg <name>` option to `tla tlc` command to allow running TLC with custom `.cfg` specification configuration files (e.g. `tla tlc spec --cfg spec-v1`).
 - Isolated TLC run artifacts and state caching (`run/tlc`) using TLC's `-metadir` option, avoiding working directory pollution with `./states` folders and supporting explicit purging via `tla tlc --cleanup`.
 - `tla --version` — appended short git commit hash for development and editable installations (`v<version>+<short_sha>`) to prevent version ambiguity in bug reports.
 

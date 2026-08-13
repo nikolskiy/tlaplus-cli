@@ -37,6 +37,51 @@ def resolve_spec_file(spec: str) -> tuple[Path, str]:
     return spec_file.absolute(), spec_file.name
 
 
+def resolve_cfg_file(cfg: str, spec_file: Path, project_root: Path | None = None) -> tuple[Path, str]:
+    """Resolve a .cfg configuration file from a string name or path.
+
+    Returns (absolute_path, cfg_arg_for_tlc).
+    Raises FileNotFoundError if not found.
+    """
+    cfg_path = Path(cfg)
+    cfg_names: list[str] = [cfg_path.name]
+    if cfg_path.suffix != ".cfg":
+        cfg_names.append(cfg_path.name + ".cfg")
+
+    candidates: list[Path] = []
+    if cfg_path.is_absolute():
+        candidates.append(cfg_path)
+        if cfg_path.suffix != ".cfg":
+            candidates.append(cfg_path.with_suffix(".cfg"))
+    else:
+        search_dirs: list[Path] = []
+        base_parent = cfg_path.parent
+        search_dirs.append(spec_file.parent / base_parent)
+        search_dirs.append(Path.cwd() / base_parent)
+        if project_root:
+            search_dirs.append(project_root / base_parent)
+
+        seen_dirs: set[Path] = set()
+        for sdir in search_dirs:
+            resolved_dir = sdir.resolve()
+            if resolved_dir not in seen_dirs:
+                seen_dirs.add(resolved_dir)
+                for cname in cfg_names:
+                    candidates.append(sdir / cname)
+
+    cfg_file = next((c for c in candidates if c.is_file()), None)
+    if not cfg_file:
+        msg = f"Could not find TLC configuration file '{cfg}'"
+        raise FileNotFoundError(msg)
+
+    cfg_arg = cfg_file.name
+    if project_root:
+        with contextlib.suppress(ValueError):
+            cfg_arg = str(cfg_file.relative_to(project_root))
+
+    return cfg_file.absolute(), cfg_arg
+
+
 def get_override_classes(classpath: list[str]) -> list[str]:
     """Inspect all classpath directories and locate override classes."""
     classes = []
@@ -64,7 +109,7 @@ def get_override_classes(classpath: list[str]) -> list[str]:
     return deduped
 
 
-def build_tlc_command(spec: str) -> list[str]:
+def build_tlc_command(spec: str, cfg: str | None = None) -> list[str]:
     """Build the java command for running TLC."""
     config = load_config()
 
@@ -98,7 +143,7 @@ def build_tlc_command(spec: str) -> list[str]:
 
     run_dir = get_spec_run_dir(spec_file)
 
-    return [
+    cmd = [
         "java",
         *config.java.opts,
         *extra_jvm_opts,
@@ -107,8 +152,14 @@ def build_tlc_command(spec: str) -> list[str]:
         config.tlc.java_class,
         "-metadir",
         str(run_dir),
-        spec_arg,
     ]
+
+    if cfg:
+        _, cfg_arg = resolve_cfg_file(cfg, spec_file, project_root=project_root)
+        cmd.extend(["-config", cfg_arg])
+
+    cmd.append(spec_arg)
+    return cmd
 
 
 def run_tlc(  # noqa: PLR0912, PLR0915
@@ -116,13 +167,15 @@ def run_tlc(  # noqa: PLR0912, PLR0915
     callback: Callable[[ModelCheckResult], None] | None = None,
     coverage: bool = False,
     raw: bool = False,
+    cfg: str | None = None,
 ) -> int:
     """Run TLC model checker on a TLA+ specification. Returns exit code."""
     config = load_config()
     validate_java_version(config.java.min_version)
 
     spec_file, _ = resolve_spec_file(spec)
-    cmd = build_tlc_command(spec)
+    cmd = build_tlc_command(spec, cfg=cfg)
+
 
     # Ensure tool mode is enabled for structured output (unless in raw mode)
     if not raw and "-tool" not in cmd:
