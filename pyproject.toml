@@ -4,25 +4,19 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tlaplus-cli"
-version = "0.8.1"
-description = "TLA+ tools: download TLC, compile custom modules, run model checker"
+version = "0.8.3"
+description = "Renamed to tlaup. This package only installs tlaup and forwards the old tla command to it."
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "typer>=0.22.0,<1.0.0",
-    "requests>=2.31.0,<3.0.0",
-    "pyyaml>=6.0,<7.0",
-    "platformdirs>=4.0,<5.0",
-    "pydantic>=2.12.5,<3.0.0",
-    "truststore>=0.9.0,<1.0.0",
-    "rich>=13.7.0,<14.0.0",
+    "tlaup>=0.8.2",
 ]
 authors = [
-    {name = "Denis Nikolskiy", email = "codeomatics@gmail.com"}
+    {name = "Denis Nikolskiy", email = "nikolskiy@users.noreply.github.com"}
 ]
 license = "MIT"
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 7 - Inactive",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -33,9 +27,9 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/nikolskiy/tlaplus-cli"
-Repository = "https://github.com/nikolskiy/tlaplus-cli"
-Issues = "https://github.com/nikolskiy/tlaplus-cli/issues"
+Homepage = "https://github.com/nikolskiy/tlaup"
+Repository = "https://github.com/nikolskiy/tlaup"
+"Old repository" = "https://github.com/nikolskiy/tlaplus-cli"
 Changelog = "https://github.com/nikolskiy/tlaplus-cli/blob/main/CHANGELOG.md"
 
 [project.scripts]
@@ -47,7 +41,6 @@ include = ["tlaplus_cli*"]
 
 [tool.setuptools.package-data]
 tlaplus_cli = ["py.typed"]
-"tlaplus_cli.resources" = ["*.yaml"]
 
 [dependency-groups]
 dev = [

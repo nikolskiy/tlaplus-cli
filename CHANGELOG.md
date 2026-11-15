@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.8.3] - 2026-11-14
+
+Final release. `tlaplus-cli` is renamed to `tlaup` and continues at https://github.com/nikolskiy/tlaup. This repository is archived.
+
+### Changed
+- The package now contains no code of its own. It depends on `tlaup`, and the `tla` command prints a notice on stderr, then runs the same command through `tlaup`.
+
+### How to switch
+- `uv tool uninstall tlaplus-cli`, then `uv tool install tlaup`, and use `tlaup` wherever you used `tla`. Installed toolsets, custom modules and the config file are kept.
+
 ## [0.8.1] - 2026-08-13
 
 ### Fixed
